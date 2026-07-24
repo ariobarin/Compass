@@ -1,6 +1,6 @@
 ---
 name: write-a-skill
-description: Create, evaluate, revise, or retire a reusable agent skill. Use when defining a repeatable capability, improving skill routing or behavior, packaging supporting resources, or removing a stale skill.
+description: Create, evaluate, revise, or retire reusable agent skills. Use for repeatable capabilities, routing or behavior fixes, resources, and stale-skill cleanup.
 ---
 
 # Write A Skill
