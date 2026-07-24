@@ -1,48 +1,70 @@
 ---
 name: write-a-skill
-description: Create, revise, or retire a reusable agent skill that strongly orients judgment, stays lean, and preserves a clean lifecycle.
+description: Create, evaluate, revise, or retire a reusable agent skill. Use when defining a repeatable capability, improving skill routing or behavior, packaging supporting resources, or removing a stale skill.
 ---
 
 # Write A Skill
 
-Create a reusable direction vector that changes how a capable model judges new
-cases. Weak skills become trigger phrases plus checklists. Bloated skills
-consume context without establishing a role.
+Build the smallest reusable capability that measurably improves agent behavior
+on its intended tasks without stealing neighboring work or consuming unnecessary
+context.
 
-The result is the smallest complete skill whose trigger, stance, evidence, and
-authority are clear before its procedure.
+Weak skills encode guesses, vague triggers, and checklists. Strong skills begin
+with observed failure, prove their value against a baseline, and keep only
+load-bearing guidance.
 
-## Establish The Contract
+## Prove The Need Before Prose
 
-The first screen should establish:
-
-- role;
-- desired result;
-- recurring failure the role corrects;
-- evidence that proves success;
-- authority boundary.
-
-Give only enough rationale to orient action. Put discovery history, model
-anecdotes, provenance, and maintenance debate outside installed runtime text.
-
-## Choose The Narrowest Surface
-
-- reusable cross-project judgment: global skill;
-- project-specific capability: project skill;
-- skeptical or independent persona: agent;
-- recurring human maintenance process: workflow;
-- deterministic guard or fragile mechanic: script, hook, manifest, or test;
-- portable opt-in domain capability: carried resource.
-
+Start with recurring evidence. Ask whether an existing skill, project
+instruction, workflow, agent, or deterministic mechanic already owns the need.
 A useful one-off does not earn global retrieval cost.
 
-## Distill, Then Prune
+Before editing, define at least three realistic cases:
 
-Each paragraph must do at least one job: shape judgment, protect a boundary,
-name evidence, or route action. Delete it or move it to a reference otherwise.
+- a positive trigger that should select the skill;
+- a near-neighbor that should not select it, or should select another skill;
+- a behavior challenge that exposes the recurring failure the skill must correct.
 
-Prefer one strong principle over a branching catalog of cases. Keep the runtime
-surface lean:
+For each case, name the expected behavior and observable evidence. Run the cases
+without the candidate skill or change and preserve the baseline observations.
+Use [evaluation-cases.md](references/evaluation-cases.md) when a reusable worksheet
+helps.
+
+## Establish The Smallest Contract
+
+The first screen should make these immediately legible:
+
+- what the capability does and when to select it;
+- the intended result;
+- the preferred default route;
+- the observable success condition.
+
+Add the recurring failure, evidence standard, and authority boundary only when
+they materially change behavior. Simple operational skills should not imitate the
+rhetoric of judgment-heavy or high-authority skills.
+
+Frontmatter uses a kebab-case `name`. Its description states both what the skill
+does and when to use it, using concrete task, input, or outcome terms that
+distinguish neighboring skills.
+
+Give one preferred route. Name an alternative only when an observable condition
+makes the default unsuitable.
+
+## Calibrate Freedom
+
+Match instruction shape to the decision:
+
+- principles and boundaries for contextual judgment;
+- compact examples or templates for a preferred shape;
+- ordered steps when sequence is real;
+- scripts or deterministic checks when mechanics are fragile or exact.
+
+Do not replace judgment with an exhaustive flowchart. Do not ask the model to
+reconstruct a deterministic operation that code can complete and verify.
+
+## Disclose Progressively
+
+Keep the runtime surface lean:
 
 ```text
 skill-name/
@@ -55,56 +77,66 @@ skill-name/
 
 Use only needed folders.
 
-- `SKILL.md` carries the role and action-critical guidance.
-- `references/` carries optional depth.
+- `SKILL.md` carries the contract, default route, and action-critical guidance.
+- `references/` carries optional depth loaded only when needed.
 - `scripts/` carries deterministic or fragile mechanics.
 - `assets/` carries output resources.
 - `agents/openai.yaml` carries discovery metadata when required.
 
-Frontmatter uses a kebab-case `name` and a concise capability plus trigger
-description. Do not add changelogs, installation notes, duplicate quick
-references, or maintainer rationale to the installed skill.
+Link optional resources directly from `SKILL.md`. Avoid reference-to-reference
+chains and duplicate quick references. Keep discovery history, changelogs,
+installation notes, provenance, and maintenance debate outside normal runtime
+text.
 
-## Shape Judgment Before Procedure
+## Engineer Executable Mechanics
 
-Lead with the behavior and state to create. Use prohibitions for crisp,
-observable boundaries. Pair judgment-heavy prohibitions with the desired
-replacement.
+A bundled script should solve the operation rather than hand the hard part back
+to the model. It should:
 
-Use principles, boundaries, and compact examples for contextual decisions. Use
-ordered steps only when sequence is real, mechanics are fragile, or a handoff
-contract must stay exact.
+- verify required dependencies and assumptions;
+- validate critical outputs;
+- return compact useful results and actionable failures;
+- justify non-obvious constants and parameters;
+- use paths and commands valid for every supported runtime, or isolate the
+  runtime-specific route explicitly.
 
-Write decisively. Succinct and pithy language helps only when the role remains
-complete.
+Quality-critical operations need a feedback or verification loop.
 
-## Preserve One Lifecycle
+## Preserve One Lifecycle And Trust Boundary
 
 Maintain one canonical source and derive copies mechanically. Do not hand-edit
 installed or generated copies.
 
-When adapting an external skill, preserve its source, immutable version, license,
-and reviewed changes outside normal runtime guidance.
+Before adopting an external skill, inspect its instructions, code, dependencies,
+tool use, network and filesystem access, and permission assumptions. Preserve its
+source, immutable version, license, and reviewed changes outside normal runtime
+guidance. Provenance alone is not approval.
 
 A rename is retirement plus a new skill. Remove stale names, triggers, install
 entries, and owned live copies without touching unrelated user material.
 
-## Prove The Skill
+## Evaluate, Then Prune
 
-Review behavior, not prose alone:
+Run the defined cases on every materially different model or runtime the skill
+supports. Observe behavior rather than self-reported confidence:
 
-- Can its trigger be distinguished from neighboring skills?
-- Does the first screen establish result, failure, evidence, and authority?
-- Does a fresh agent behave differently on a realistic task?
-- Can detail move to a reference or deterministic mechanic?
-- Does any rule decide something that should remain contextual?
-- Can any paragraph disappear without losing behavior?
-- Do source, derived copies, discovery metadata, and retirement state agree?
+- Was the right skill selected?
+- Did the near-neighbor avoid the skill or route correctly?
+- Did the agent follow the preferred route?
+- Which references and scripts did it actually use?
+- Did the output and verification satisfy the case?
+- Did failure handling preserve a useful next action?
 
-Forward-test fragile judgment with realistic prompts. Repair the cause of weak
-behavior instead of appending another warning.
+Compare candidate behavior with the baseline. Keep additions only when they
+produce a meaningful improvement or protect a necessary boundary. Turn recurring
+failures into evaluation cases before adding another warning. Remove any
+paragraph, branch, resource, or script that does not earn its context and
+maintenance cost.
+
+Static validation proves structure and wiring. It does not prove behavior.
 
 ## Output
 
-Return the skill, needed resources, trigger rationale, behavior evidence, known
-boundaries, lifecycle changes, and the durable surface that owns it.
+Return the skill, needed resources, trigger rationale, evaluation cases, baseline
+and candidate evidence, known boundaries, lifecycle changes, and the durable
+surface that owns it.
