@@ -13,10 +13,10 @@ behavior just because it happened to be useful once.
 - Read `README.md`, `philosophy.md`, `AGENTS.md`, and
   `local-docs/maintenance-learnings.md`.
 - Keep the change narrow enough that a reviewer can see the portable boundary.
-- Run `\.\scripts\doctor.ps1`.
+- Run `.\scripts\doctor.ps1`.
 - If the change affects live install behavior, also run
-  `\.\scripts\verify-live.ps1 -SkipCodexCommand`.
-- Use `\.\scripts\committer.ps1 <subject> <paths>` to preview an exact-scope
+  `.\scripts\verify-live.ps1 -SkipCodexCommand`.
+- Use `.\scripts\committer.ps1 <subject> <paths>` to preview an exact-scope
   commit, then rerun it with `-Apply` before the subject after reviewing the
   selected paths.
 - Leave auth, sessions, logs, caches, browser state, SQLite files, generated
