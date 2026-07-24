@@ -16,16 +16,19 @@
     "input-token-economy",
     "pr-merge-closeout",
     "ui-ux-pro-max",
+    "update-compass",
     "using-codex-goals",
     "webmcp-eval-triage",
     "webmcp-tool-authoring",
-    "webmcp-verify-tool"
+    "webmcp-verify-tool",
+    "write-a-compass-skill"
   ],
   "claude_skills": [
     "benchmark-infra-reviewer",
     "benchmark-run-operator",
     "input-token-economy",
-    "using-codex-goals"
+    "using-codex-goals",
+    "write-a-compass-skill"
   ],
   "claude_agents": [
     "benchmark-infra-reviewer.md"

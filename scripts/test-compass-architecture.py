@@ -35,11 +35,13 @@ class CompassArchitectureTests(unittest.TestCase):
     def test_installed_skill_set_matches_current_architecture(self) -> None:
         manifest = self.manifest()
         skills = set(manifest["agents"]["skills"])
+        self.assertIn("compass", skills)
         self.assertIn("run-a-micro-experiment", skills)
         self.assertIn("using-goals", skills)
         self.assertIn("which-llm", skills)
-        self.assertIn("write-a-compass-skill", skills)
         self.assertIn("write-a-skill", skills)
+        self.assertNotIn("update-compass", skills)
+        self.assertNotIn("write-a-compass-skill", skills)
         self.assertNotIn("benchmark-run-operator", skills)
         self.assertNotIn("input-token-economy", skills)
         self.assertNotIn("using-codex-goals", skills)
@@ -249,6 +251,8 @@ class CompassArchitectureTests(unittest.TestCase):
             self.assertNotIn("@codex", text, path)
             self.assertNotIn("using-codex-goals", text, path)
             self.assertNotIn("input-token-economy", text, path)
+            self.assertNotIn("$update-compass", text, path)
+            self.assertNotIn("$write-a-compass-skill", text, path)
 
     def test_retired_skill_manifest_is_well_formed(self) -> None:
         # The manifest is the single source. Name format is owned by
@@ -278,8 +282,13 @@ class CompassArchitectureTests(unittest.TestCase):
             "input-token-economy",
             "using-codex-goals",
             "benchmark-infra-reviewer.md",
+            "update-compass",
+            "write-a-compass-skill",
         ):
             self.assertIn(required, all_names)
+        self.assertIn("update-compass", manifest["user_skills_home"])
+        self.assertIn("write-a-compass-skill", manifest["user_skills_home"])
+        self.assertIn("write-a-compass-skill", manifest["claude_skills"])
 
     def test_skill_description_cap_matches_shared_constant(self) -> None:
         common = self.read("scripts/common.ps1")

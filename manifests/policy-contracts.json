@@ -59,17 +59,14 @@
       }
     },
     {
-      "id": "routing-source-referenced-by-compass-skill",
+      "id": "compass-single-entrypoint",
       "path": "codex/skills/compass/SKILL.md",
       "required": [
-        "workflows/addition-intake.md"
-      ]
-    },
-    {
-      "id": "routing-source-referenced-by-skill-authoring",
-      "path": "codex/skills/write-a-compass-skill/SKILL.md",
-      "required": [
-        "workflows/addition-intake.md"
+        "Turn the user's learning or requested change into the smallest coherent Compass",
+        "current repository guidance, workflows, manifests, scripts, and tests as",
+        "Do not restate or cache their rules here.",
+        "use `write-a-skill`",
+        "reviewed update workflow and script instead of changing source."
       ]
     },
     {
