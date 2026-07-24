@@ -147,16 +147,6 @@
       }
     },
     {
-      "name": "update-compass",
-      "owner": "compass",
-      "source": "codex/skills/update-compass",
-      "profile": "default",
-      "targets": {
-        "codex": "copy",
-        "claude": "none"
-      }
-    },
-    {
       "name": "using-goals",
       "owner": "compass",
       "source": "codex/skills/using-goals",
@@ -185,16 +175,6 @@
       "name": "workspace-steward",
       "owner": "compass",
       "source": "codex/skills/workspace-steward",
-      "profile": "default",
-      "targets": {
-        "codex": "copy",
-        "claude": "derived"
-      }
-    },
-    {
-      "name": "write-a-compass-skill",
-      "owner": "compass",
-      "source": "codex/skills/write-a-compass-skill",
       "profile": "default",
       "targets": {
         "codex": "copy",
