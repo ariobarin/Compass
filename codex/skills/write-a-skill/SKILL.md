@@ -1,6 +1,6 @@
 ---
 name: write-a-skill
-description: Create or revise a reusable agent skill that strongly orients judgment, stays lean, and proves its behavior.
+description: Create, revise, or retire a reusable agent skill that strongly orients judgment, stays lean, and preserves a clean lifecycle.
 ---
 
 # Write A Skill
@@ -78,6 +78,17 @@ contract must stay exact.
 Write decisively. Succinct and pithy language helps only when the role remains
 complete.
 
+## Preserve One Lifecycle
+
+Maintain one canonical source and derive copies mechanically. Do not hand-edit
+installed or generated copies.
+
+When adapting an external skill, preserve its source, immutable version, license,
+and reviewed changes outside normal runtime guidance.
+
+A rename is retirement plus a new skill. Remove stale names, triggers, install
+entries, and owned live copies without touching unrelated user material.
+
 ## Prove The Skill
 
 Review behavior, not prose alone:
@@ -88,6 +99,7 @@ Review behavior, not prose alone:
 - Can detail move to a reference or deterministic mechanic?
 - Does any rule decide something that should remain contextual?
 - Can any paragraph disappear without losing behavior?
+- Do source, derived copies, discovery metadata, and retirement state agree?
 
 Forward-test fragile judgment with realistic prompts. Repair the cause of weak
 behavior instead of appending another warning.
@@ -95,4 +107,4 @@ behavior instead of appending another warning.
 ## Output
 
 Return the skill, needed resources, trigger rationale, behavior evidence, known
-boundaries, and the durable surface that owns it.
+boundaries, lifecycle changes, and the durable surface that owns it.
