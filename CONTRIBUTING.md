@@ -13,10 +13,10 @@ behavior just because it happened to be useful once.
 - Read `README.md`, `philosophy.md`, `AGENTS.md`, and
   `local-docs/maintenance-learnings.md`.
 - Keep the change narrow enough that a reviewer can see the portable boundary.
-- Run `.\scripts\doctor.ps1`.
+- Run `\.\scripts\doctor.ps1`.
 - If the change affects live install behavior, also run
-  `.\scripts\verify-live.ps1 -SkipCodexCommand`.
-- Use `.\scripts\committer.ps1 <subject> <paths>` to preview an exact-scope
+  `\.\scripts\verify-live.ps1 -SkipCodexCommand`.
+- Use `\.\scripts\committer.ps1 <subject> <paths>` to preview an exact-scope
   commit, then rerun it with `-Apply` before the subject after reviewing the
   selected paths.
 - Leave auth, sessions, logs, caches, browser state, SQLite files, generated
@@ -36,7 +36,9 @@ should handle a mechanical check. A manifest should define a boundary.
 ## Review Expectations
 
 Prefer small PRs with clear motivation. In the title and body, name the
-boundary, behavior, or risk the change improves.
+boundary, behavior, or risk the change improves. State what the change prunes,
+distills, narrows, derives, or mechanizes. A net-new surface should name the
+recurring cost it repays.
 
 When in doubt, explain why a file belongs in this portable repo instead of in a
 target project, local Codex home, user skill home, plugin cache, or ignored
