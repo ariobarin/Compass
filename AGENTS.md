@@ -67,8 +67,8 @@ user has already granted or explicitly waived that review boundary.
 
 ## Skill Authoring
 
-Use `write-a-skill` for general skill design and `write-a-compass-skill` for
-Compass routing, install, derivation, provenance, retirement, and validation.
+Use `write-a-skill` for skill design. Use `compass` to adopt the result into
+reviewed Compass source.
 
 A skill should make the reader absorb, in its first screen:
 
