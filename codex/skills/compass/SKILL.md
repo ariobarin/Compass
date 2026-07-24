@@ -1,57 +1,34 @@
 ---
 name: compass
-description: Maintain Compass source, runtime boundaries, install wiring, retirement, and validation. Invoke manually for Compass repository changes.
+description: Capture or apply durable learning in Compass, or refresh the live setup. Use when asked to write, save, adopt, update, or sync something through Compass.
 ---
 
 # Compass
 
-Maintain Compass as reviewed source for portable Codex and Claude behavior. This
-skill exists because a strong runtime change can still fail when source routing,
-derivation, retirement, policy, and verification disagree.
+Turn the user's learning or requested change into the smallest coherent Compass
+update. Use this as the single entrypoint for changing reviewed Compass source or
+refreshing the live setup.
 
-Use it only when changing Compass itself.
+Inspect the Compass repository before deciding where the change belongs. Treat
+its current repository guidance, workflows, manifests, scripts, and tests as
+authoritative. Do not restate or cache their rules here.
 
-## Preserve The Source Boundaries
+## Apply The Learning
 
-- Codex global guidance belongs in `codex/AGENTS.md`.
-- Claude global guidance belongs in `claude/CLAUDE.md`.
-- Runtime-neutral shared skills and agents belong under `codex/` and derive only
-  where the manifest says so.
-- Claude-specific agent contracts belong under `claude/agents/`.
-- Portable opt-in domain packs belong under `carried/` and stay out of global
-  install lists.
-- Compass maintainer reasoning belongs in `workflows/` and `local-docs/`.
-- Deterministic truth belongs in scripts, hooks, manifests, schemas, and tests.
+Find the existing surface that owns the behavior. Prefer refining, merging,
+moving, mechanizing, or retiring material over adding another source.
 
-Read root `AGENTS.md`, `philosophy.md`, `workflows/addition-intake.md`,
-`local-docs/maintenance-learnings.md`, and the workflow nearest the change.
+When the change creates or revises a reusable skill, use `write-a-skill` for the
+skill's contract and language, then follow the repository's current integration
+route.
 
-## Change The Whole Ownership Contract
+When the request is only to refresh the live installation, use the repository's
+reviewed update workflow and script instead of changing source.
 
-When behavior or ownership moves, update the complete route in one change:
+## Result
 
-- reviewed source;
-- Codex and Claude install or derivation maps;
-- source provenance;
-- explicit retirement paths;
-- policy and required-file checks;
-- MCP catalog expectations;
-- narrow tests and install round-trip coverage;
-- directly related documentation.
+Finish with one authoritative expression of the learning, the smallest coherent
+diff, directly affected wiring reconciled, stale or duplicate paths removed,
+current verification evidence, and a focused pull request when source changed.
 
-Make Compass-owned capability exact. A fallback paragraph is not a substitute
-for correct wiring.
-
-## Validate The Result
-
-Run narrow tests first, then:
-
-```powershell
-.\scripts\doctor.ps1
-.\scripts\verify-live.ps1 -SkipCodexCommand
-git diff --check
-```
-
-Exercise install and retirement paths when ownership changes. Forward-test
-judgment changes with a fresh realistic invocation. Use a focused PR as the
-review unit and keep public mutation behind named authority.
+Do not merge or make another public mutation without named authority.
