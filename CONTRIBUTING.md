@@ -36,7 +36,9 @@ should handle a mechanical check. A manifest should define a boundary.
 ## Review Expectations
 
 Prefer small PRs with clear motivation. In the title and body, name the
-boundary, behavior, or risk the change improves.
+boundary, behavior, or risk the change improves. State what the change prunes,
+distills, narrows, derives, or mechanizes. A net-new surface should name the
+recurring cost it repays.
 
 When in doubt, explain why a file belongs in this portable repo instead of in a
 target project, local Codex home, user skill home, plugin cache, or ignored

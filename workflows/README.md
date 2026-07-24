@@ -8,7 +8,7 @@ Choose the workflow by the decision or operation it owns:
 | Work | Workflow |
 | --- | --- |
 | Decide whether a durable artifact belongs in Compass | [addition-intake.md](addition-intake.md) |
-| Audit skills, agents, hooks, docs, manifests, and config | [compass-review-program.md](compass-review-program.md) |
+| Run a reduction-first audit of guidance, agents, skills, mechanics, and config | [compass-review-program.md](compass-review-program.md) |
 | Maintain separate Claude global guidance and derived surfaces | [claude-config.md](claude-config.md) |
 | Install, diff, snapshot, verify, or update portable source | [portable-config.md](portable-config.md) |
 | Preserve one objective across contexts and delegates | [long-running-work.md](long-running-work.md) |
