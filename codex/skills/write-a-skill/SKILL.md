@@ -30,6 +30,11 @@ without the candidate skill or change and preserve the baseline observations.
 Use [evaluation-cases.md](references/evaluation-cases.md) when a reusable worksheet
 helps.
 
+For retirement or cleanup, add the required negative case: the stale skill must
+not remain selected or retained. Its success evidence proves the intended
+replacement or non-selection and that stale triggers, install mappings, retired
+paths, and Compass-owned live copies are absent.
+
 ## Establish The Smallest Contract
 
 The first screen should make these immediately legible:
@@ -129,6 +134,9 @@ supports. Observe behavior rather than self-reported confidence:
 - Which references and scripts did it actually use?
 - Did the output and verification satisfy the case?
 - Did failure handling preserve a useful next action?
+- For retirement or cleanup, did the evidence prove the replacement or
+  non-selection and removal of stale routing, install, retirement, and owned
+  live artifacts?
 
 Compare candidate behavior with the baseline. Keep additions only when they
 produce a meaningful improvement or protect a necessary boundary. Turn recurring

@@ -41,6 +41,18 @@ Expected judgment or action:
 Observable success evidence:
 ```
 
+## Case 4: Retirement Or Cleanup Negative Case
+
+Required negative case when retiring, renaming, or cleaning up a skill.
+
+```text
+Prompt:
+Stale skill or route that must not remain selected or retained:
+Expected replacement or non-selection:
+Stale artifacts checked: triggers, install mappings, retired paths, and Compass-owned live copies
+Observable success evidence:
+```
+
 Add cases only for materially distinct risks. A fragile script or public action
 usually needs a failure or recovery case. A skill shared across materially
 different models or runtimes needs coverage for each meaningful difference.
@@ -52,6 +64,7 @@ different models or runtimes needs coverage for each meaningful difference.
 | Positive trigger | | | | |
 | Near-neighbor | | | | |
 | Behavior challenge | | | | |
+| Retirement or cleanup negative case | | | | |
 
 ## Grade Observable Behavior
 
@@ -64,6 +77,9 @@ Inspect what happened, not what the agent says happened:
 - whether critical results were verified;
 - whether failures produced a useful next action;
 - whether authority and safety boundaries held.
+- for retirement or cleanup, whether the intended replacement or non-selection
+  occurred and stale triggers, install mappings, retired paths, and
+  Compass-owned live copies were removed.
 
 A file read, command result, artifact, tool trace, or environment state can be
 evidence. Confidence and self-reported compliance are claims.
