@@ -37,11 +37,14 @@ The first screen should make these immediately legible:
 - what the capability does and when to select it;
 - the intended result;
 - the preferred default route;
-- the observable success condition.
+- the recurring failure it corrects;
+- the evidence standard and observable success condition;
+- the authority boundary.
 
-Add the recurring failure, evidence standard, and authority boundary only when
-they materially change behavior. Simple operational skills should not imitate the
-rhetoric of judgment-heavy or high-authority skills.
+Every Compass skill must state its recurring failure, evidence standard, and
+authority boundary in its first screen. State them plainly and proportionately;
+simple operational skills should not imitate the rhetoric of judgment-heavy or
+high-authority skills.
 
 Frontmatter uses a kebab-case `name`. Its description states both what the skill
 does and when to use it, using concrete task, input, or outcome terms that
