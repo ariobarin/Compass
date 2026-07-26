@@ -49,8 +49,10 @@ helps.
 
 For retirement or cleanup, add the required negative case: the stale skill must
 not remain selected or retained. Its success evidence proves the intended
-replacement or non-selection and that stale triggers, install mappings, retired
-paths, and Compass-owned live copies are absent.
+replacement or non-selection, removes stale active triggers and install entries,
+preserves any `manifests/retired-skills.json` mapping still needed to clean up
+older installs, and confirms that retired live paths and Compass-owned live
+copies are absent after the relevant install or verification step.
 
 ## Choose The Narrowest Surface
 
@@ -155,7 +157,10 @@ entries, and owned live copies without touching unrelated user material.
 ## Evaluate, Then Prune
 
 Run the defined cases on every materially different model or runtime the skill
-supports. Observe behavior rather than self-reported confidence:
+supports. Run each baseline and candidate pair with a fresh agent or isolated
+context. Keep prompts, fixtures, model or runtime, and grading criteria fixed
+within a pair, record intentional variations, and preserve a unique run or
+evidence locator. Observe behavior rather than self-reported confidence:
 
 - Was the right skill selected?
 - Did the near-neighbor avoid the skill or route correctly?
@@ -164,8 +169,8 @@ supports. Observe behavior rather than self-reported confidence:
 - Did the output and verification satisfy the case?
 - Did failure handling preserve a useful next action?
 - For retirement or cleanup, did the evidence prove the replacement or
-  non-selection and removal of stale routing, install, retirement, and owned
-  live artifacts?
+  non-selection, remove stale active routing and owned live artifacts, and
+  preserve retirement mappings still needed for upgrade cleanup?
 
 Compare candidate behavior with the baseline. Keep additions only when they
 produce a meaningful improvement or protect a necessary boundary. Turn recurring
