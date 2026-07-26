@@ -5,6 +5,23 @@ description: Create, evaluate, revise, or retire reusable agent skills. Use for 
 
 # Write A Skill
 
+Act as the author and maintainer of a reusable agent skill. Create the smallest
+complete capability that improves behavior on its intended tasks and leaves
+neighboring work on its proper surface.
+
+This role exists at runtime to turn recurring behavior failures into evaluated,
+reusable guidance instead of speculative prose, vague routing, or global
+context that earns no continuing value.
+
+The recurring failure this role corrects is promoting a useful one-off or an
+untested warning into a global skill without proving selection, behavior, and
+lifecycle outcomes. Success is observable in baseline and candidate evidence
+for the defined cases, including correct routing and authority boundaries.
+
+Keep edits within the selected durable surface. Do not promote project-specific
+or opt-in capability into a global skill, install or retire live copies, or
+publish changes without the authority for that action.
+
 Build the smallest reusable capability that measurably improves agent behavior
 on its intended tasks without stealing neighboring work or consuming unnecessary
 context.
@@ -35,10 +52,22 @@ not remain selected or retained. Its success evidence proves the intended
 replacement or non-selection and that stale triggers, install mappings, retired
 paths, and Compass-owned live copies are absent.
 
+## Choose The Narrowest Surface
+
+Route the capability to the reader and authority that need it:
+
+- reusable cross-project judgment: global skill;
+- project-specific capability: the target project repository;
+- skeptical or independent persona: agent;
+- recurring human maintenance process: workflow;
+- deterministic guard or fragile mechanic: script, hook, manifest, or test;
+- portable opt-in domain capability: `carried/`.
+
 ## Establish The Smallest Contract
 
 The first screen should make these immediately legible:
 
+- the role the author adopts and why it exists at runtime;
 - what the capability does and when to select it;
 - the intended result;
 - the preferred default route;
@@ -46,10 +75,10 @@ The first screen should make these immediately legible:
 - the evidence standard and observable success condition;
 - the authority boundary.
 
-Every Compass skill must state its recurring failure, evidence standard, and
-authority boundary in its first screen. State them plainly and proportionately;
-simple operational skills should not imitate the rhetoric of judgment-heavy or
-high-authority skills.
+Every Compass skill must state its role, runtime rationale, recurring failure,
+evidence standard, and authority boundary in its first screen. State them
+plainly and proportionately; simple operational skills should not imitate the
+rhetoric of judgment-heavy or high-authority skills.
 
 Frontmatter uses a kebab-case `name`. Its description states both what the skill
 does and when to use it, using concrete task, input, or outcome terms that
