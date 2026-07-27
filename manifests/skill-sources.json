@@ -47,6 +47,21 @@
       }
     },
     {
+      "name": "display-dev",
+      "owner": "display-dev/skill",
+      "source": "codex/skills/display-dev",
+      "profile": "default",
+      "targets": {
+        "codex": "copy",
+        "claude": "derived"
+      },
+      "upstream": {
+        "repository": "display-dev/skill",
+        "reviewed_ref": "2d0e5be4d48ebe44b809ea4245a66822a7dca2fd",
+        "source_sha256": "cc7514ac3bc014a13742252f31cd18e795c76df46d0448d4928dcfc344f7ce03"
+      }
+    },
+    {
       "name": "git-branch-resolver",
       "owner": "compass",
       "source": "codex/skills/git-branch-resolver",
