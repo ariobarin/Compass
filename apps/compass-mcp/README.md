@@ -2,14 +2,16 @@
 
 This directory exposes the reviewed Compass profile and skills as a read-only MCP server for regular ChatGPT.com chat-mode conversations. ChatGPT work mode and Codex are explicitly outside its intended surface.
 
-At initialization, the server includes its separately authored ChatGPT profile plus every skill name, description, and source path. This mirrors the native Codex harness: select a workflow from the available catalog without a discovery call, then load only that workflow's full `SKILL.md` before applying it.
+Initialization contains only the server's trust boundary and retrieval contract. The profile and skill catalog stay deferred until the current task needs them. This keeps ordinary conversations from carrying Compass guidance that cannot affect the next action.
 
 ## Tools
 
-- `get_profile` re-reads `apps/compass-mcp/profile.md` for explicit inspection or freshness checks. The profile is already present in initialization instructions.
-- `list_skills` re-reads the reviewed skill catalog for explicit inspection or freshness checks. Skill summaries are already present in initialization instructions.
-- `get_skill` loads one full `SKILL.md` after a workflow is selected.
-- `search` and `fetch` expose the same content through the standard read-only knowledge shapes.
+- `get_profile` loads `apps/compass-mcp/profile.md` when stable user preferences materially affect the task or freshness needs confirmation.
+- `list_skills` discovers the reviewed skill catalog before a workflow is selected.
+- `get_skill` loads one full `SKILL.md` after its catalog summary is relevant to the task.
+- `search` and `fetch` support broader source lookup when a named workflow is not yet clear.
+
+Clients should retrieve the smallest useful packet: profile only when preferences matter, one selected skill for a known workflow, or search results followed by one fetched document. They should not load the profile or full catalog by default.
 
 
 The app profile is maintained separately from `codex/AGENTS.md` and

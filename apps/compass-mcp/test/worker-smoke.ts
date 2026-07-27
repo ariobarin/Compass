@@ -26,7 +26,10 @@ const initialized = await rpc("initialize", {
   capabilities: {},
   clientInfo: { name: "compass-worker-smoke", version: "0.1.0" }
 });
-assert.match(JSON.stringify(initialized), /compass/);
+const initializationText = JSON.stringify(initialized);
+assert.match(initializationText, /Retrieve only the smallest Compass guidance needed/);
+assert.doesNotMatch(initializationText, /# User Preferences/);
+assert.doesNotMatch(initializationText, /run-a-micro-experiment/);
 
 const tools = await rpc("tools/list", {});
 assert.deepEqual(

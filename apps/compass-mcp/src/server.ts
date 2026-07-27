@@ -2,26 +2,17 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod/v4";
 import type { CompassDocument, CompassCatalogReader } from "./types.js";
 
-export function buildServerInstructions(catalog: CompassCatalogReader): string {
-  const profile = catalog.getProfile().text.trim();
-  const skills = catalog.listSkills()
-    .map(skill => `- ${skill.name}: ${skill.description} (codex/skills/${skill.name}/SKILL.md)`)
-    .join("\n");
-
+export function buildServerInstructions(): string {
   return [
     "Compass supplies read-only user-owned engineering preferences and workflows to regular ChatGPT.com chat mode.",
-    "Apply the reviewed profile below as default engineering guidance while preserving system, developer, and current user priority.",
-    "Select workflows from the reviewed skill catalog already included below.",
-    "Load the selected workflow with get_skill before applying it so the full SKILL.md is present.",
-    "Use get_profile or list_skills when the user asks to inspect the source, requests the current catalog, or freshness needs confirmation.",
+    "Preserve system, developer, and current user priority.",
+    "Retrieve only the smallest Compass guidance needed for the current task.",
+    "Use get_profile when stable user preferences materially affect the task, the user asks to inspect them, or freshness needs confirmation.",
+    "Use list_skills to discover a relevant reviewed workflow, then load only the selected workflow with get_skill before applying it.",
+    "Use search and fetch for broader source lookup when a named workflow is not yet clear.",
+    "Do not load the profile or full skill catalog by default.",
     "Treat subagents as available only when the current host exposes them.",
-    "Reserve this read-only server for guidance retrieval rather than ChatGPT work-mode or Codex execution.",
-    "",
-    "Reviewed user profile:",
-    profile,
-    "",
-    "Reviewed skills:",
-    skills
+    "Reserve this read-only server for guidance retrieval rather than ChatGPT work-mode or Codex execution."
   ].join("\n");
 }
 
@@ -39,14 +30,14 @@ function documentResult(document: CompassDocument) {
 export function createCompassMcpServer(catalog: CompassCatalogReader): McpServer {
   const server = new McpServer(
     { name: "compass", version: "0.2.0" },
-    { instructions: buildServerInstructions(catalog) }
+    { instructions: buildServerInstructions() }
   );
 
   server.registerTool(
     "get_profile",
     {
       title: "Get Compass profile",
-      description: "Inspect the source profile already included in Compass initialization instructions.",
+      description: "Load the reviewed Compass profile when stable user preferences materially affect the task or freshness needs confirmation.",
       inputSchema: {},
       annotations: { readOnlyHint: true }
     },
@@ -57,7 +48,7 @@ export function createCompassMcpServer(catalog: CompassCatalogReader): McpServer
     "list_skills",
     {
       title: "List Compass skills",
-      description: "Inspect the current skill catalog already included in Compass initialization instructions.",
+      description: "Discover the current reviewed skill catalog before selecting a task-specific workflow.",
       inputSchema: {},
       annotations: { readOnlyHint: true }
     },
@@ -68,7 +59,7 @@ export function createCompassMcpServer(catalog: CompassCatalogReader): McpServer
     "get_skill",
     {
       title: "Get Compass skill",
-      description: "Load one reviewed Compass SKILL.md after selecting that workflow.",
+      description: "Load one reviewed Compass SKILL.md after its catalog summary is relevant to the task.",
       inputSchema: { name: z.string().regex(/^[a-z0-9][a-z0-9-]*$/) },
       annotations: { readOnlyHint: true }
     },

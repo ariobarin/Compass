@@ -39,10 +39,11 @@ try {
 
   await client.connect(transport);
   const instructions = client.getInstructions() ?? "";
-  assert.match(instructions, /# User Preferences/);
-  assert.match(instructions, /- run-a-micro-experiment:/);
-  assert.match(instructions, /Select workflows from the reviewed skill catalog already included below/);
-  assert.match(instructions, /Load the selected workflow with get_skill/);
+  assert.doesNotMatch(instructions, /# User Preferences/);
+  assert.doesNotMatch(instructions, /- run-a-micro-experiment:/);
+  assert.match(instructions, /Retrieve only the smallest Compass guidance needed/);
+  assert.match(instructions, /load only the selected workflow with get_skill/);
+  assert.match(instructions, /Do not load the profile or full skill catalog by default/);
 
   const tools = await client.listTools();
   assert.deepEqual(
@@ -51,7 +52,7 @@ try {
   );
   assert.match(
     tools.tools.find(tool => tool.name === "list_skills")?.description ?? "",
-    /already included/
+    /Discover the current reviewed skill catalog/
   );
 
   const profile = await client.callTool({ name: "get_profile", arguments: {} });
