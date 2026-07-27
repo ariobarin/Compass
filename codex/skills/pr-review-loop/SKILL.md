@@ -16,10 +16,22 @@ of the remaining review or mutation boundary.
 Read [review-loop-playbook.md](references/review-loop-playbook.md) for confined
 review bundles, source-blind behavior proof, waiting, and stale-PR decisions.
 
+## Begin With One State Snapshot
+
+Run `scripts/collect-pr-state.py --repo <owner/name> --pr <number>` before judging
+readiness and after every material head change. The default excerpt mode keeps the
+packet compact while preserving identities, URLs, target SHAs, and truncation
+flags. Rerun with `--include-bodies` when a finding needs its complete text.
+
+Do not claim complete inspection when the packet reports `complete: false`.
+Paginate the named surface, then preserve the additional evidence with the same
+head identity.
+
 ## Preserve The Named Identity
 
-Record repository, PR number, base branch, head branch, current head SHA, checks,
-review decision, inline findings, and merge state.
+Use the state packet as the current record of repository, PR number, base branch,
+head branch, head SHA, checks, review decision, comments, threads, and merge
+state.
 
 Continue on the named PR unless the user explicitly asks to replace, retarget,
 close, or rebuild it. When the requested outcome is current-main intent rather
@@ -57,7 +69,7 @@ a fixed number of agents.
 
 ## Iterate Through The Implementation Owner
 
-1. Inspect current PR state and unresolved comments.
+1. Collect a fresh state packet and inspect unresolved findings.
 2. Run the narrow checks that cover changed behavior.
 3. Obtain independent current-head review.
 4. Route actionable findings to the implementation owner.

@@ -80,6 +80,10 @@ jobs:
         shell: pwsh
         run: python scripts/test-review-bundle.py
 
+      - name: Test PR state collector
+        shell: pwsh
+        run: python scripts/test-pr-state.py
+
       - name: Validate policy contracts
         shell: pwsh
         run: python scripts/validate-policy-contracts.py

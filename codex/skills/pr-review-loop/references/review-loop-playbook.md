@@ -7,11 +7,19 @@ behavior proof, structured waiting, or a decision about stale PR identity.
 
 Evidence belongs to a head SHA.
 
+Start with `scripts/collect-pr-state.py --repo <owner/name> --pr <number>`. It
+normalizes PR identity, the latest head, check rollup, reviews and their commit
+SHAs, top-level comments, review threads, merge state, stale evidence, and
+pagination flags into one JSON packet. Excerpt mode is the default; use
+`--include-bodies` only when complete finding text is needed.
+
+A packet with `complete: false` proves that one or more GitHub connections exceed
+the bounded query. Paginate those named connections before making a completeness
+claim.
+
 - Reread the SHA after every push, rebase, force-push, or retarget.
 - Refresh checks and reviewers whose proof targets an older head.
 - Name the tested build, ref, or artifact for behavior validation.
-- Inspect inline comments independently from top-level comments and review
-  bodies.
 - Treat approval, test output, and runtime proof as stale when their target
   identity changed materially.
 

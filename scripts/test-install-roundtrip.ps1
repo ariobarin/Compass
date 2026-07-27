@@ -199,6 +199,7 @@ last_refresh = "machine-local"
     Assert-PathPresent -Path (Join-Path (Join-Path (Join-Path $claudeHome "skills") "compass") "SKILL.md")
     Assert-PathPresent -Path (Join-Path (Join-Path (Join-Path $claudeHome "skills") "behavior-validator") "SKILL.md")
     Assert-PathPresent -Path (Join-Path (Join-Path (Join-Path (Join-Path $claudeHome "skills") "pr-review-loop") "scripts") "build-review-bundle.py")
+    Assert-PathPresent -Path (Join-Path (Join-Path (Join-Path (Join-Path $claudeHome "skills") "pr-review-loop") "scripts") "collect-pr-state.py")
     Assert-PathPresent -Path (Join-Path (Join-Path $claudeHome "agents") "progress-monitor.md")
     Assert-PathPresent -Path (Join-Path (Join-Path $claudeHome "agents") "reviewer.md")
 
