@@ -13,6 +13,9 @@ can still be called directly.
 .\scripts\compass.ps1 skills-audit
 .\scripts\compass.ps1 skills-audit -ProjectPath . -NoLive -Json
 .\scripts\compass.ps1 skills-audit -Check
+.\scripts\compass.ps1 context
+.\scripts\compass.ps1 context -Task "review PR 214" -Phase verify -Mutation public
+.\scripts\compass.ps1 context -Task "write a PRD" -Json
 .\scripts\compass.ps1 orchestration
 .\scripts\compass.ps1 orchestration -Plain
 .\scripts\compass.ps1 orchestration -GoalId release-42 -Json
@@ -27,6 +30,11 @@ can still be called directly.
 .\scripts\compass.ps1 update -Ref v2026.07.10
 .\scripts\compass.ps1 update -Ref <commit-sha>
 ```
+
+`context` validates the routing catalog, reports the approximate size of skill
+cores, and traces why a task selects a small ranked set of skills. Its manifest
+contains only machine routing signals and filters; skill names, descriptions,
+and full guidance remain owned by each `SKILL.md`.
 
 `install` and `snapshot` preserve their preview-first behavior. They mutate only
 when `-Apply` is present. `status` runs the live verifier in a child PowerShell

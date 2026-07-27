@@ -12,6 +12,9 @@ Runs Compass maintenance commands through one stable entry point.
 ./scripts/compass.ps1 skills-audit -ProjectPath . -NoLive -Json
 
 .EXAMPLE
+./scripts/compass.ps1 context -Task "review PR 214" -Phase verify -Mutation public
+
+.EXAMPLE
 ./scripts/compass.ps1 orchestration -Plain
 
 .EXAMPLE
@@ -26,7 +29,7 @@ Runs Compass maintenance commands through one stable entry point.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("status", "skills", "skills-audit", "orchestration", "doctor", "diff", "install", "snapshot", "verify", "update")]
+    [ValidateSet("status", "skills", "skills-audit", "context", "orchestration", "doctor", "diff", "install", "snapshot", "verify", "update")]
     [string]$Command,
 
     [switch]$Apply,
@@ -41,6 +44,11 @@ param(
     [string]$ClaudeHome,
     [string]$ProjectPath,
     [string[]]$AdditionalSkillRoot,
+    [string]$Task,
+    [string]$Phase,
+    [string]$Mutation,
+    [ValidateRange(1, 10)]
+    [int]$Limit = 3,
     [string]$Ledger,
     [string]$GoalId,
     [string]$Remote = "origin",
@@ -146,8 +154,8 @@ function Get-LiveStatus {
     }
 }
 
-if (($Json -or $Plain) -and $Command -notin @("status", "skills", "skills-audit", "orchestration")) {
-    throw "-Json and -Plain are supported only by status, skills, skills-audit, and orchestration"
+if (($Json -or $Plain) -and $Command -notin @("status", "skills", "skills-audit", "context", "orchestration")) {
+    throw "-Json and -Plain are supported only by status, skills, skills-audit, context, and orchestration"
 }
 if ($Json -and $Plain) {
     throw "choose either -Json or -Plain"
@@ -163,6 +171,12 @@ if (($RequireInSync -or $SkipCodexCommand) -and $Command -notin @("status", "ver
 }
 if (($ProjectPath -or $AdditionalSkillRoot) -and $Command -notin @("skills", "skills-audit")) {
     throw "-ProjectPath and -AdditionalSkillRoot are supported only by skills and skills-audit"
+}
+if (($Task -or $Phase -or $Mutation) -and $Command -ne "context") {
+    throw "-Task, -Phase, and -Mutation are supported only by context"
+}
+if (($Phase -or $Mutation) -and -not $Task) {
+    throw "-Phase and -Mutation require -Task"
 }
 if (($Ledger -or $GoalId) -and $Command -ne "orchestration") {
     throw "-Ledger and -GoalId are supported only by orchestration"
@@ -251,6 +265,25 @@ switch ($Command) {
             $arguments["NoLive"] = $true
         }
         Invoke-CompassScript -Name "skills-audit.ps1" -Arguments $arguments
+    }
+    "context" {
+        $arguments = @{ Limit = $Limit }
+        if ($Task) {
+            $arguments["Task"] = $Task
+        }
+        if ($Phase) {
+            $arguments["Phase"] = $Phase
+        }
+        if ($Mutation) {
+            $arguments["Mutation"] = $Mutation
+        }
+        if ($Json) {
+            $arguments["Json"] = $true
+        }
+        if ($Plain) {
+            $arguments["Plain"] = $true
+        }
+        Invoke-CompassScript -Name "context-routing.ps1" -Arguments $arguments
     }
     "orchestration" {
         $arguments = @{ Action = "status" }

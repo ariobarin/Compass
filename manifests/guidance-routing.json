@@ -1,0 +1,439 @@
+{
+  "schema_version": 1,
+  "phases": [
+    "inspect",
+    "research",
+    "plan",
+    "implement",
+    "verify",
+    "publish"
+  ],
+  "mutation_levels": [
+    "none",
+    "local",
+    "repository",
+    "public",
+    "destructive"
+  ],
+  "skills": [
+    {
+      "name": "action-items-to-prs",
+      "phases": [
+        "plan",
+        "implement",
+        "publish"
+      ],
+      "mutation_levels": [
+        "none",
+        "local",
+        "repository",
+        "public"
+      ],
+      "signals": [
+        "action items",
+        "audit findings",
+        "report to prs",
+        "group changes",
+        "action tracker"
+      ],
+      "exclusions": [
+        "single pull request review",
+        "uncommitted patch"
+      ]
+    },
+    {
+      "name": "behavior-validator",
+      "phases": [
+        "verify"
+      ],
+      "mutation_levels": [
+        "none",
+        "local",
+        "repository"
+      ],
+      "signals": [
+        "behavior contract",
+        "source blind",
+        "black box validation",
+        "observable behavior",
+        "acceptance validation"
+      ],
+      "exclusions": [
+        "unit test implementation",
+        "code review only"
+      ]
+    },
+    {
+      "name": "compass",
+      "phases": [
+        "plan",
+        "implement",
+        "verify",
+        "publish"
+      ],
+      "mutation_levels": [
+        "local",
+        "repository",
+        "public"
+      ],
+      "signals": [
+        "update compass",
+        "save in compass",
+        "sync compass",
+        "adopt learning",
+        "refresh live setup"
+      ],
+      "exclusions": [
+        "project specific change"
+      ]
+    },
+    {
+      "name": "design-taste-frontend",
+      "phases": [
+        "plan",
+        "implement",
+        "verify"
+      ],
+      "mutation_levels": [
+        "none",
+        "local",
+        "repository"
+      ],
+      "signals": [
+        "landing page",
+        "portfolio",
+        "marketing site",
+        "editorial page",
+        "visual direction"
+      ],
+      "exclusions": [
+        "dashboard",
+        "app flow",
+        "mobile ui"
+      ]
+    },
+    {
+      "name": "git-branch-resolver",
+      "phases": [
+        "inspect",
+        "plan",
+        "implement",
+        "verify",
+        "publish"
+      ],
+      "mutation_levels": [
+        "none",
+        "local",
+        "repository",
+        "public",
+        "destructive"
+      ],
+      "signals": [
+        "git branch",
+        "worktree",
+        "remote branch",
+        "resolve branch",
+        "retarget pull request",
+        "delete branch"
+      ],
+      "exclusions": []
+    },
+    {
+      "name": "grill-me",
+      "phases": [
+        "research",
+        "plan"
+      ],
+      "mutation_levels": [
+        "none"
+      ],
+      "signals": [
+        "stress test plan",
+        "grill me",
+        "consequential questions",
+        "challenge design",
+        "unresolved decisions"
+      ],
+      "exclusions": [
+        "implement plan"
+      ]
+    },
+    {
+      "name": "monitor-to-completion",
+      "phases": [
+        "verify",
+        "publish"
+      ],
+      "mutation_levels": [
+        "none"
+      ],
+      "signals": [
+        "wait for checks",
+        "monitor condition",
+        "poll status",
+        "wait until",
+        "watch completion"
+      ],
+      "exclusions": [
+        "general news monitoring",
+        "long lived daemon"
+      ]
+    },
+    {
+      "name": "orchestration-controller",
+      "phases": [
+        "plan",
+        "implement",
+        "verify",
+        "publish"
+      ],
+      "mutation_levels": [
+        "none",
+        "local",
+        "repository",
+        "public"
+      ],
+      "signals": [
+        "delegate work",
+        "coordinate agents",
+        "reconcile worker results",
+        "long running implementation",
+        "orchestration controller"
+      ],
+      "exclusions": [
+        "single bounded task"
+      ]
+    },
+    {
+      "name": "pr-review-loop",
+      "phases": [
+        "verify",
+        "publish"
+      ],
+      "mutation_levels": [
+        "none",
+        "local",
+        "repository",
+        "public"
+      ],
+      "signals": [
+        "review pr",
+        "pull request readiness",
+        "fix review findings",
+        "current head",
+        "merge readiness"
+      ],
+      "exclusions": [
+        "create pull requests from report",
+        "review uncommitted patch"
+      ]
+    },
+    {
+      "name": "root-cause-not-symptom",
+      "phases": [
+        "inspect",
+        "research",
+        "plan",
+        "implement",
+        "verify"
+      ],
+      "mutation_levels": [
+        "none",
+        "local",
+        "repository"
+      ],
+      "signals": [
+        "root cause",
+        "diagnose bug",
+        "failing test",
+        "regression",
+        "error mechanism"
+      ],
+      "exclusions": [
+        "known mechanical fix"
+      ]
+    },
+    {
+      "name": "run-a-micro-experiment",
+      "phases": [
+        "research",
+        "verify"
+      ],
+      "mutation_levels": [
+        "none",
+        "local"
+      ],
+      "signals": [
+        "micro experiment",
+        "technical uncertainty",
+        "minimal reproduction",
+        "disposable spike",
+        "prototype to learn"
+      ],
+      "exclusions": [
+        "production implementation"
+      ]
+    },
+    {
+      "name": "specialist-review",
+      "phases": [
+        "inspect",
+        "verify"
+      ],
+      "mutation_levels": [
+        "none"
+      ],
+      "signals": [
+        "security review",
+        "accessibility review",
+        "performance review",
+        "specialist critique",
+        "domain expert review"
+      ],
+      "exclusions": [
+        "ordinary pull request review"
+      ]
+    },
+    {
+      "name": "subagent-driven-development",
+      "phases": [
+        "implement",
+        "verify"
+      ],
+      "mutation_levels": [
+        "local",
+        "repository"
+      ],
+      "signals": [
+        "approved implementation plan",
+        "delegate implementation",
+        "worker slices",
+        "parallel implementation",
+        "subagent development"
+      ],
+      "exclusions": [
+        "planning only",
+        "unapproved implementation"
+      ]
+    },
+    {
+      "name": "to-prd",
+      "phases": [
+        "research",
+        "plan"
+      ],
+      "mutation_levels": [
+        "none",
+        "local",
+        "repository"
+      ],
+      "signals": [
+        "write prd",
+        "product requirements",
+        "feature requirements",
+        "requirements document",
+        "decision bearing requirements"
+      ],
+      "exclusions": [
+        "publish prd",
+        "implement feature"
+      ]
+    },
+    {
+      "name": "using-goals",
+      "phases": [
+        "plan",
+        "implement",
+        "verify",
+        "publish"
+      ],
+      "mutation_levels": [
+        "none",
+        "local",
+        "repository",
+        "public"
+      ],
+      "signals": [
+        "long running goal",
+        "resume work",
+        "checkpoint",
+        "goal ledger",
+        "multi session"
+      ],
+      "exclusions": [
+        "single short task"
+      ]
+    },
+    {
+      "name": "which-llm",
+      "phases": [
+        "research",
+        "plan",
+        "implement"
+      ],
+      "mutation_levels": [
+        "none"
+      ],
+      "signals": [
+        "which llm",
+        "model comparison",
+        "model selection",
+        "llm price",
+        "llm benchmark",
+        "openrouter"
+      ],
+      "exclusions": [
+        "change model config without comparison"
+      ]
+    },
+    {
+      "name": "workspace-steward",
+      "phases": [
+        "inspect",
+        "plan",
+        "implement",
+        "verify"
+      ],
+      "mutation_levels": [
+        "none",
+        "local",
+        "repository",
+        "destructive"
+      ],
+      "signals": [
+        "organize workspace",
+        "audit worktrees",
+        "multi repo workspace",
+        "scratch cleanup",
+        "archive experiments"
+      ],
+      "exclusions": [
+        "single repository code change"
+      ]
+    },
+    {
+      "name": "write-a-skill",
+      "phases": [
+        "research",
+        "plan",
+        "implement",
+        "verify"
+      ],
+      "mutation_levels": [
+        "none",
+        "local",
+        "repository"
+      ],
+      "signals": [
+        "create skill",
+        "revise skill",
+        "evaluate skill",
+        "retire skill",
+        "skill routing"
+      ],
+      "exclusions": [
+        "project specific instructions"
+      ]
+    }
+  ]
+}

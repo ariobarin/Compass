@@ -4,6 +4,7 @@
     "agents.ps1",
     "claude.ps1",
     "generated-artifacts.ps1",
+    "guidance-routing.ps1",
     "hooks.ps1",
     "ledger-schema-prose.ps1",
     "manifest-boundaries.ps1",

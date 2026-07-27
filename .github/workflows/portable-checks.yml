@@ -55,6 +55,10 @@ jobs:
         shell: pwsh
         run: python scripts/test-compass-architecture.py
 
+      - name: Test context routing
+        shell: pwsh
+        run: python scripts/test-context-routing.py
+
       - name: Test behavior-validator isolation
         shell: pwsh
         run: python scripts/test-behavior-validator-workspace.py
