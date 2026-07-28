@@ -16,11 +16,11 @@
 
 ## External Tool Routing
 
-- Prefer a locally authenticated CLI over a connector when both cover the task.
-  Use a connector only when it adds a material capability the CLI lacks or the
-  user explicitly requests it.
-- Keep redundant connector plugins disabled or uninstalled so they do not
-  distract tool selection.
+- Treat plugins and plugin-provided apps, connectors, tools, and skills as
+  ChatGPT chat capabilities by default. In Codex, use one only when the user
+  explicitly names it in the current request.
+- Plugin availability does not authorize Codex use. When no plugin is explicitly
+  requested, use local files and locally authenticated CLIs.
 - Before requesting consent or changing a live external tenant, explain the
   effective authorization grant and why it is needed. Confirm that approval
   applies to that exact route.

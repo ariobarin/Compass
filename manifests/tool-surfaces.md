@@ -31,9 +31,10 @@ and cache paths out of this repo.
   cache paths?
 - Can it mutate GitHub, browser state, files, processes, containers, or cloud
   resources?
-- Does a locally authenticated CLI already provide equivalent coverage? Keep a
-  redundant connector disabled or uninstalled unless its distinct capability is
-  required.
+- Did the current Codex request explicitly name the plugin-backed surface?
+  Shared availability for ChatGPT chat does not authorize Codex invocation.
+- When no plugin is explicitly requested, can local files and a locally
+  authenticated CLI cover the task?
 - Is the capability needed for the task, or would source reads and scripts be
   enough?
 - Should the durable artifact be a workflow, skill, script, manifest entry, or
