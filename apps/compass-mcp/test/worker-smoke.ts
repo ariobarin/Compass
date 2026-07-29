@@ -34,7 +34,11 @@ assert.deepEqual(
   ["fetch", "get_profile", "get_skill", "list_skills", "search"]
 );
 
-const search = await rpc("tools/call", { name: "search", arguments: { query: "micro experiment" } });
-assert.match(JSON.stringify(search), /skill:run-a-micro-experiment/);
+const skills = await rpc("tools/call", { name: "list_skills", arguments: {} });
+assert.match(JSON.stringify(skills), /"skills":\[\]/);
+
+const search = await rpc("tools/call", { name: "search", arguments: { query: "pull request" } });
+assert.match(JSON.stringify(search), /"id":"profile"/);
+assert.doesNotMatch(JSON.stringify(search), /skill:/);
 
 console.log("compass worker smoke: ok");

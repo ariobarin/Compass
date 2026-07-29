@@ -36,9 +36,6 @@ export class CompassCatalog implements CompassCatalogReader {
     if (!existsSync(this.profilePath)) {
       throw new Error(`Compass profile not found: ${this.profilePath}`);
     }
-    if (!existsSync(this.skillsPath)) {
-      throw new Error(`Compass skills directory not found: ${this.skillsPath}`);
-    }
   }
 
   getProfile(): CompassDocument {
@@ -52,6 +49,8 @@ export class CompassCatalog implements CompassCatalogReader {
   }
 
   listSkills(): SkillSummary[] {
+    if (!existsSync(this.skillsPath)) return [];
+
     return readdirSync(this.skillsPath, { withFileTypes: true })
       .filter(entry => entry.isDirectory())
       .map(entry => {

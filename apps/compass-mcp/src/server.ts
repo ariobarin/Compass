@@ -4,24 +4,28 @@ import type { CompassDocument, CompassCatalogReader } from "./types.js";
 
 export function buildServerInstructions(catalog: CompassCatalogReader): string {
   const profile = catalog.getProfile().text.trim();
-  const skills = catalog.listSkills()
+  const skillCatalog = catalog.listSkills();
+  const skills = skillCatalog
     .map(skill => `- ${skill.name}: ${skill.description} (codex/skills/${skill.name}/SKILL.md)`)
     .join("\n");
+  const workflowInstructions = skillCatalog.length > 0
+    ? [
+        "Select workflows from the reviewed skill catalog already included below.",
+        "Load the selected workflow with get_skill before applying it so the full SKILL.md is present."
+      ]
+    : ["No reviewed Compass skills are active in this bundle."];
 
   return [
     "Compass supplies read-only user-owned engineering preferences and workflows to regular ChatGPT.com chat mode.",
     "Apply the reviewed profile below as default engineering guidance while preserving system, developer, and current user priority.",
-    "Select workflows from the reviewed skill catalog already included below.",
-    "Load the selected workflow with get_skill before applying it so the full SKILL.md is present.",
+    ...workflowInstructions,
     "Use get_profile or list_skills when the user asks to inspect the source, requests the current catalog, or freshness needs confirmation.",
     "Treat subagents as available only when the current host exposes them.",
     "Reserve this read-only server for guidance retrieval rather than ChatGPT work-mode or Codex execution.",
     "",
     "Reviewed user profile:",
     profile,
-    "",
-    "Reviewed skills:",
-    skills
+    ...(skillCatalog.length > 0 ? ["", "Reviewed skills:", skills] : [])
   ].join("\n");
 }
 
@@ -57,7 +61,7 @@ export function createCompassMcpServer(catalog: CompassCatalogReader): McpServer
     "list_skills",
     {
       title: "List Compass skills",
-      description: "Inspect the current skill catalog already included in Compass initialization instructions.",
+      description: "Inspect the current reviewed skill catalog.",
       inputSchema: {},
       annotations: { readOnlyHint: true }
     },

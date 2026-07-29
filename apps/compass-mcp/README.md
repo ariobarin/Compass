@@ -2,12 +2,12 @@
 
 This directory exposes the reviewed Compass profile and skills as a read-only MCP server for regular ChatGPT.com chat-mode conversations. ChatGPT work mode and Codex are explicitly outside its intended surface.
 
-At initialization, the server includes its separately authored ChatGPT profile plus every skill name, description, and source path. This mirrors the native Codex harness: select a workflow from the available catalog without a discovery call, then load only that workflow's full `SKILL.md` before applying it.
+At initialization, the server includes its separately authored ChatGPT profile plus every active skill name, description, and source path. A blank skill catalog is valid and is reported as empty.
 
 ## Tools
 
 - `get_profile` re-reads `apps/compass-mcp/profile.md` for explicit inspection or freshness checks. The profile is already present in initialization instructions.
-- `list_skills` re-reads the reviewed skill catalog for explicit inspection or freshness checks. Skill summaries are already present in initialization instructions.
+- `list_skills` re-reads the reviewed skill catalog for explicit inspection or freshness checks.
 - `get_skill` loads one full `SKILL.md` after a workflow is selected.
 - `search` and `fetch` expose the same content through the standard read-only knowledge shapes.
 
