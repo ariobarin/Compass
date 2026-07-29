@@ -18,8 +18,7 @@ function Get-ManifestRepoPaths {
         $paths.Add((ConvertTo-GitPath -Path (Join-Path "codex" $file)))
     }
 
-    $configReviewFile = Get-ManifestStringValue -Section "config" -Key "review_file"
-    if ($configReviewFile) {
+    foreach ($configReviewFile in @(Get-PortableManifestArray -Text $manifestText -Section "config" -Key "review_files")) {
         $paths.Add((ConvertTo-GitPath -Path (Join-Path "codex" $configReviewFile)))
     }
 
@@ -58,27 +57,6 @@ function Get-ManifestRepoDirPrefixes {
     }
 
     return @($prefixes)
-}
-
-function Get-ManifestStringValue {
-    param(
-        [string]$Section,
-        [string]$Key
-    )
-
-    $sectionPattern = "(?ms)^\[$([regex]::Escape($Section))\]\s*(.*?)(?=^\[|\z)"
-    $sectionMatch = [regex]::Match($manifestText, $sectionPattern)
-    if (-not $sectionMatch.Success) {
-        return $null
-    }
-
-    $keyPattern = "(?m)^\s*$([regex]::Escape($Key))\s*=\s*`"([^`"]+)`""
-    $keyMatch = [regex]::Match($sectionMatch.Groups[1].Value, $keyPattern)
-    if (-not $keyMatch.Success) {
-        return $null
-    }
-
-    return $keyMatch.Groups[1].Value
 }
 
 $blockedNames = @(Get-PortableManifestArray -Text $manifestText -Section "local_only" -Key "files")
@@ -131,8 +109,8 @@ if ($blockedDirs.Count -eq 0) {
 }
 
 $allowedTemplateLocalDirs = @(
-    Join-Path $repoRoot "codex\skills\workspace-steward\references\project-template\tmp"
-    Join-Path $repoRoot "codex\skills\workspace-steward\references\project-template\worktrees"
+    Join-Path $repoRoot "project-templates\workspace\tmp"
+    Join-Path $repoRoot "project-templates\workspace\worktrees"
 ) | ForEach-Object { Get-DoctorFullPath -Path $_ }
 
 foreach ($dir in Get-DoctorChildItem -Kind Directory) {

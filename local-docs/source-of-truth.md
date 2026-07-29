@@ -26,45 +26,41 @@ Status values:
 
 | ID | Fact family | Canonical source | Mechanism | Bound by | Status |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Control-state templates | workflows/templates/*.md, project-template pair, and using-goals blocks | pin | template-anchors.ps1 | consolidated |
-| 2 | Retired skill names | manifests/retired-skills.json | pin | retired-skills.ps1 and test-compass-architecture.py | consolidated |
-| 3 | Skill roster | codex/skills/*/ and manifests/portable-files.toml | keep | skill-sources.ps1 | canonical |
+| 1 | Control-state and project starter templates | workflows/templates/*.md and project-templates/workspace | accepted | manifest-boundaries.ps1 | accepted |
+| 2 | Portable retirement targets and config values | manifests/portable-retirements.json | pin | portable-retirements.ps1 and test-compass-architecture.py | consolidated |
+| 3 | Empty active portable roster | manifests/portable-files.toml | pin | manifest-boundaries.ps1 and skill-sources.ps1 | consolidated |
 | 4 | Required-files list | git index (tracked files) | generate | required-files.ps1 | consolidated |
 | 5 | Doctor dispatch list | manifests/doctor-checks.json | generate | doctor.ps1 | consolidated |
-| 6 | Codex and Claude agent pairs | codex/agents/*.toml and carried/*/agents/*.toml | generate | claude.ps1 and generated-artifacts.ps1 | consolidated |
+| 6 | Carried Codex and Claude agent pairs | carried/*/agents/*.toml | generate | generated-artifacts.ps1 | consolidated |
 | 7 | Worker Result enum | manifests/policy-contracts.json | pin | policy-contracts.ps1 | consolidated |
 | 8 | Model-tier defaults | manifests/model-tiers.json | generate | model-tiers.ps1 | consolidated |
 | 9 | Ledger schema version | scripts/_orchestration_ledger_core.py | generate | generated-artifacts.ps1 | consolidated |
 | 10 | Skill-description length cap | scripts/common.ps1 MaxSkillDescriptionLength | pin | test-compass-architecture.py | consolidated |
 | 11 | Routing source reference (checklist prose deferred) | workflows/addition-intake.md | pin | policy-contracts.ps1 | consolidated |
 | 12 | Glossary terms | glossary.md | link | editorial convention | accepted |
-| 13 | Shared runtime-global prose | manifests/policy-contracts.json | pin | policy-contracts.ps1 | consolidated |
+| 13 | Blank portable global route | manifests/portable-files.toml | pin | policy-contracts.ps1 | consolidated |
 | 14 | Portable runtime home paths | scripts/common.ps1 home resolvers | pin | portable-home-paths.ps1 | consolidated |
+
+Third-party source snapshots are repository-only under `external-sources/`.
+Their reviewed refs and hashes are frozen in
+`local-docs/2026-07-29-pre-reset-catalog.md`; they are not active skill-source
+records.
 
 ## Intentional separations
 
 These duplications are deliberate and stay. They are listed here so future
 audits do not re-flag them.
 
-- `codex/AGENTS.md`, `claude/CLAUDE.md`, and `apps/compass-mcp/profile.md`
-  serve different runtimes. Policy contracts pin the applicable shared blocks:
-  Writing, Git, and PR prose across all three surfaces, plus continuity,
-  planning, repository, and Windows prose across the Codex and Claude globals.
-  Runtime-specific deltas stay separate.
-- `workflows/templates/*.md` (maintainer, long form),
-  `codex/skills/workspace-steward/references/project-template` copies (starter
-  pack), and the embedded blocks in
-  `codex/skills/using-goals/references/goal-contracts.md` serve different
-  audiences. All are intentional canonicals with different field sets;
-  `template-anchors.ps1` pins their shared structural anchors so none silently
-  loses its identity.
+- `apps/compass-mcp/profile.md` remains an app-local profile. It is not part of
+  the blank global Codex and Claude install route.
+- `workflows/templates/*.md` are maintainer control-document templates.
+  `project-templates/workspace/` is a copyable project starter. Both are
+  repository-only and serve different lifecycles.
 - `workflows/plan-template.md` is elaborated maintainer guidance distinct from
   the bare `workflows/templates/plan.md` template. Both stay.
-- `scripts/test-compass-architecture.py` asserts skill names as a behavior
-  contract, not as a second roster. The manifest remains the roster.
 - `scripts/doctor/checks/agents.ps1` allowed-models allowlist is a different
   fact from the model-tier defaults in `manifests/model-tiers.json`. Both stay.
-- `codex/skills/workspace-steward/references/project-template/glossary.md` is a
+- `project-templates/workspace/glossary.md` is a
   starter-pack glossary for adopting workspaces, distinct from the terminology
   authority at root `glossary.md`. It stays separate so a new workspace gets a
   compact self-contained reference.
@@ -73,49 +69,21 @@ audits do not re-flag them.
   must also appear in `.gitignore`; unrelated repository ignore patterns remain
   independent.
 
-## Deferred decisions (need user input)
+## Blank Route Boundary
 
-- Cluster 1 (control-state templates): the three template families keep
-  intentionally different field sets. Full generation remains deferred until a
-  canonical field set is chosen for each control document. The shipped
-  `template-anchors.ps1` pin covers the shared goal, catalog, assignment, and
-  checkpoint identities, plus plan and decision identities where both file
-  families provide those artifacts, so the registered binding is consolidated.
-- Cluster 13 (shared runtime-global prose): policy contracts pin the verbatim
-  Writing, Git, and PR blocks across `codex/AGENTS.md`, `claude/CLAUDE.md`, and
-  `apps/compass-mcp/profile.md`, plus the shared continuity, planning,
-  repository, and Windows blocks across the Codex and Claude globals. Full
-  generation (a `generate-runtime-globals.py` reassembling each file from a
-  shared source plus runtime deltas) was deferred because these are load-bearing
-  runtime instructions; the pin is the safe fallback authorized in the plan.
-- Cluster 11 (routing table and update-together checklist): the canonical
-  routing source `workflows/addition-intake.md` is already referenced from the
-  key surfaces, and policy contracts now require the two skill-authoring
-  surfaces to keep that reference. Cutting the surface-specific restatements of
-  the update-together checklist is editorial work that needs a per-surface
-  review, so it is deferred; the pins bind the canonical source in the meantime.
-- Cluster 12 (glossary terms): `glossary.md` is the named terminology authority.
-  Skills should link to it rather than redefine terms, but enforcing that
-  mechanically would be brittle, so it stays an editorial convention with no
-  mechanical check. A sweep of the most redundant in-skill re-definitions is
-  deferred for per-surface review.
+The 14 fact families describe the accepted repository tree after the reset.
+`manifests/portable-files.toml` is the only active global install authority and
+its Codex, user-skill, Claude, and reviewed-config arrays are empty.
+`manifests/portable-retirements.json` is the only retirement authority.
 
-## Status summary
+Project templates and frozen external source snapshots are repository-only.
+They cannot be promoted, imported, derived, or installed automatically. Any
+global add-back requires explicit user approval and a separate reviewed change
+that updates the install manifest, ownership records, retirement behavior,
+doctor checks, tests, and maintainer guidance together.
 
-Of the 14 fact families, 13 are consolidated or already canonical and 1 is
-accepted as an intentional separation (cluster 12 glossary). The
-surface-specific update-together checklist prose (part of cluster 11) is
-deferred as editorial work. The consolidations are
-enforced mechanically: new manifests and doctor checks (`retired-skills`,
-`model-tiers`, `generated-artifacts`, `source-of-truth`, `template-anchors`,
-`portable-home-paths`), generators under `scripts/generators/`, policy-contract
-pins, git-derived required files, and dynamic doctor dispatch.
-
-Required files (cluster 4) use the git index as the source of repository
-membership. The architecturally mandatory entrypoints the old hand-written list
-covered are already enforced elsewhere: root docs and `[repo_only]` files by
-`manifest-boundaries.ps1`, each manifest by its own check, Codex agents by
-`portable-data.py`, skills by `skills.ps1`, runtime globals by policy contracts,
-and test scripts by CI. No broad path roster was restored; the one soft spot
-(generator deletion) is review-visible. Run `pwsh scripts/doctor.ps1` to verify
-the whole binding holds.
+The active bindings are enforced by dynamic doctor dispatch, git-derived
+required files, `manifest-boundaries.ps1`, `portable-retirements.ps1`,
+`generated-artifacts.ps1`, `model-tiers.ps1`, `portable-home-paths.ps1`, policy
+contracts, focused Python tests, and the install round trip. Run
+`pwsh scripts/doctor.ps1` to verify the complete binding.

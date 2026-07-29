@@ -9,7 +9,6 @@ Choose the workflow by the decision or operation it owns:
 | --- | --- |
 | Decide whether a durable artifact belongs in Compass | [addition-intake.md](addition-intake.md) |
 | Run a reduction-first audit of guidance, agents, skills, mechanics, and config | [compass-review-program.md](compass-review-program.md) |
-| Maintain separate Claude global guidance and derived surfaces | [claude-config.md](claude-config.md) |
 | Install, diff, snapshot, verify, or update portable source | [portable-config.md](portable-config.md) |
 | Preserve one objective across contexts and delegates | [long-running-work.md](long-running-work.md) |
 | Operate the local mechanical control index | [orchestration-ledger.md](orchestration-ledger.md) |
@@ -18,8 +17,8 @@ Choose the workflow by the decision or operation it owns:
 | Recover unfinished Codex sessions after restart | [codex-restart-recovery.md](codex-restart-recovery.md) |
 | Map repository or external evidence before editing | [read-only-research.md](read-only-research.md) |
 | Turn repeated agent failures into durable improvements | [agent-failures.md](agent-failures.md) |
-| Review and refresh the separately owned `which-llm` skill | [which-llm-skill.md](which-llm-skill.md) |
 
 Use [../glossary.md](../glossary.md) when a term changes ownership, authority,
 or lifecycle behavior. Keep workflows focused on maintainer action. Put reusable
-runtime judgment in skills or agents, and put exact mechanics in scripts.
+project behavior in carried packs or project templates, preserve frozen external
+source under `external-sources/`, and put exact mechanics in scripts.

@@ -84,11 +84,27 @@ function Get-JsonProperty {
 }
 
 function Get-RecoveryBootKey {
-    return (Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToUniversalTime().ToString("o")
+    return (Get-RecoveryBootTimeUtc).ToString("yyyy-MM-ddTHH:mm:ssZ")
 }
 
 function Get-RecoveryBootTimeUtc {
-    return (Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToUniversalTime()
+    try {
+        return (Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).LastBootUpTime.ToUniversalTime()
+    }
+    catch {
+        $tickBytes = [BitConverter]::GetBytes([Environment]::TickCount)
+        $uptimeMilliseconds = [BitConverter]::ToUInt32($tickBytes, 0)
+        $estimated = (Get-Date).ToUniversalTime().AddMilliseconds(-1 * [double]$uptimeMilliseconds)
+        return [datetime]::new(
+            $estimated.Year,
+            $estimated.Month,
+            $estimated.Day,
+            $estimated.Hour,
+            $estimated.Minute,
+            $estimated.Second,
+            [DateTimeKind]::Utc
+        )
+    }
 }
 
 function Get-TextFromContent {

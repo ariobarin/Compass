@@ -1,7 +1,0 @@
-interface:
-  display_name: "Compass"
-  short_description: "Capture durable learning in Compass"
-  default_prompt: "Use $compass to write this learning into the smallest authoritative Compass surface, or refresh the live setup when that is the request."
-
-policy:
-  allow_implicit_invocation: false

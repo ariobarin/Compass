@@ -16,7 +16,7 @@ $liveHome = Get-CodexHome -CodexHome $CodexHome
 $agentsHome = Get-AgentsHome -AgentsHome $AgentsHome
 $claudeHome = Get-ClaudeHome -ClaudeHome $ClaudeHome
 $items = Get-PortableFileMap -RepoRoot $repoRoot -CodexHome $liveHome -AgentsHome $agentsHome -ClaudeHome $claudeHome
-$retiredItems = Get-RetiredPortableFileMap -CodexHome $liveHome -AgentsHome $agentsHome
+$retiredItems = Get-RetiredPortableFileMap -CodexHome $liveHome -AgentsHome $agentsHome -ClaudeHome $claudeHome
 $drift = New-Object System.Collections.Generic.List[string]
 $missing = New-Object System.Collections.Generic.List[string]
 $retired = New-Object System.Collections.Generic.List[string]
@@ -75,7 +75,7 @@ $reviewedConfigContract = Get-ReviewedConfigContract -RepoRoot $repoRoot -CodexH
 $reviewConfigPath = $reviewedConfigContract.ReviewPath
 $liveConfigPath = $reviewedConfigContract.LivePath
 try {
-    $reviewedConfigState = Get-ReviewedConfigState -ReviewPath $reviewConfigPath -LivePath $liveConfigPath
+    $reviewedConfigState = Get-ReviewedConfigState -ReviewPath $reviewConfigPath -RetirementPath $reviewedConfigContract.RetirementPath -LivePath $liveConfigPath
     foreach ($problem in @(Get-ReviewedConfigProblemStrings -State $reviewedConfigState)) {
         $configProblems.Add($problem)
     }

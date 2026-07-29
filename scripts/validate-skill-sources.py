@@ -157,8 +157,8 @@ def validate(root: Path, source_manifest_path: Path, portable_manifest_path: Pat
     if unknown_top:
         problems.append(f"skill source manifest has unsupported fields: {', '.join(unknown_top)}")
     raw_records = source_manifest.get("skills")
-    if not isinstance(raw_records, list) or not raw_records:
-        problems.append("skill source manifest requires a non-empty skills array")
+    if not isinstance(raw_records, list):
+        problems.append("skill source manifest requires a skills array")
         return problems, []
 
     normalized: list[dict[str, Any]] = []

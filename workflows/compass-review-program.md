@@ -1,8 +1,13 @@
 # Compass Review Program
 
-Use this workflow to audit Compass runtime guidance, agents, skills, hooks,
-maintainer documentation, carried packs, manifests, scripts, reviewed config,
-and install behavior.
+Use this workflow to audit Compass maintainer documentation, carried packs,
+repository-only source snapshots and templates, manifests, scripts, and blank
+install behavior.
+
+The authored portable global route is intentionally blank. No Codex or Claude
+global, skill, agent, hook, or reviewed config entry may be restored from this
+workflow. Any add-back requires explicit user approval and a separate reviewed
+change.
 
 Review one coherent surface family per pull request. Preserve capability while
 reducing recurring context, state, routes, dependencies, and maintenance.
@@ -36,14 +41,14 @@ proved.
 
 Classify each item before editing:
 
-- Codex runtime global: `codex/AGENTS.md`;
-- Claude runtime global: `claude/CLAUDE.md`;
-- shared installed capability: `codex/agents/` or `codex/skills/` with an
-  explicit Claude derivation decision;
-- Claude-specific capability: `claude/agents/`;
-- carried capability: `carried/`;
+- blank global install authority: `manifests/portable-files.toml`;
+- safe retirement authority: `manifests/portable-retirements.json`;
+- carried capability: `carried/`, adopted only by a target project;
+- frozen external source: `external-sources/`, with provenance preserved but no
+  install route;
+- copyable project starter: `project-templates/`;
 - maintainer context: root `AGENTS.md`, `workflows/`, or `local-docs/`;
-- mechanical truth: `scripts/`, `manifests/`, hooks, and reviewed config;
+- mechanical truth: `scripts/` and `manifests/`;
 - stale or removal candidate.
 
 Record only facts that change a decision:
@@ -75,9 +80,10 @@ For long-running guidance, verify that one logical principal authors control
 state, delegates receive reviewed assignments and return evidence, and a fresh
 context can resume from anchors plus a checkpoint.
 
-## Review Skills And Agents
+## Review Capability Candidates
 
-Every installed capability pays retrieval and maintenance cost. Ask:
+The active authored global roster is empty. For carried packs, frozen source
+snapshots, or a proposed add-back, ask:
 
 - Is the behavior reusable across repositories and ordinary work?
 - Is the description specific enough for natural invocation?
@@ -85,12 +91,12 @@ Every installed capability pays retrieval and maintenance cost. Ask:
 - Does it overlap another role, or merely compose with it?
 - Would a project or carried route preserve value at lower global cost?
 - Does model and effort routing match the current dated profile?
-- Do derivation, install maps, source records, retirements, policy checks, and
-  MCP catalogs agree?
+- Do install maps, source records, retirements, policy checks, and catalogs
+  agree that the current global route stays blank?
 
-Use the minimum set of roles justified by material risk. More reviewers,
-branches, references, or handoffs are not more rigorous when they duplicate the
-same judgment.
+Do not convert a carried pack or frozen source snapshot into an installed global
+capability during an audit. Prepare the decision and evidence for explicit user
+approval instead.
 
 ## Review Control Surfaces
 
@@ -102,11 +108,11 @@ recovery attempts; and a fresh-context resume path.
 
 A ledger supports the work. It never becomes the product.
 
-## Review Hooks And Mechanics
+## Review Mechanics
 
-For each hook or script, identify its trigger, exact property, failure behavior,
-and proving test. Move deterministic truth out of prose. Keep broad judgment out
-of code.
+For each script, identify its trigger, exact property, failure behavior, and
+proving test. Move deterministic truth out of prose. Keep broad judgment out of
+code. Authored global hooks are retired and have no active source route.
 
 ## Common Reduction Targets
 

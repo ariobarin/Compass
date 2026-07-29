@@ -1,6 +1,0 @@
-interface:
-  display_name: "Subagent-Driven Development"
-  short_description: "Execute approved implementation slices with fresh owners"
-  default_prompt: "Use $subagent-driven-development to turn this approved plan into reviewed worker-owned implementation slices, independent evidence gates, and a compact return to the principal."
-policy:
-  allow_implicit_invocation: true

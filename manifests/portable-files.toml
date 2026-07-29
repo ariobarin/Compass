@@ -6,14 +6,9 @@
 home = "$CODEX_HOME or %USERPROFILE%\\.codex"
 
 files = [
-  "AGENTS.md",
-  "hooks.json",
-  "keybindings.json",
 ]
 
 dirs = [
-  "agents",
-  "hooks",
 ]
 
 [agents]
@@ -23,30 +18,11 @@ home = "$HOME\\.agents"
 skills_dir = "$HOME\\.agents\\skills"
 
 skills = [
-  "action-items-to-prs",
-  "behavior-validator",
-  "compass",
-  "design-taste-frontend",
-  "git-branch-resolver",
-  "grill-me",
-  "monitor-to-completion",
-  "orchestration-controller",
-  "pr-review-loop",
-  "root-cause-not-symptom",
-  "run-a-micro-experiment",
-  "specialist-review",
-  "subagent-driven-development",
-  "to-prd",
-  "using-goals",
-  "which-llm",
-  "workspace-steward",
-  "write-a-skill",
 ]
 
 # These skills write refresh data, exports, and Python caches inside their live
 # directory. Compass manages their code while preserving those runtime paths.
 stateful_skills = [
-  "which-llm",
 ]
 
 [claude]
@@ -57,30 +33,12 @@ skills_dir = "$HOME\\.claude\\skills"
 agents_dir = "$HOME\\.claude\\agents"
 
 files = [
-  "CLAUDE.md",
 ]
 
 # Claude skills derive from the reviewed codex/skills source at install time.
 # List a skill under `derived_skills` to copy SKILL.md plus references/,
 # scripts/, and assets/, dropping agents/openai.yaml.
 derived_skills = [
-  "action-items-to-prs",
-  "behavior-validator",
-  "compass",
-  "design-taste-frontend",
-  "git-branch-resolver",
-  "grill-me",
-  "monitor-to-completion",
-  "orchestration-controller",
-  "pr-review-loop",
-  "root-cause-not-symptom",
-  "run-a-micro-experiment",
-  "specialist-review",
-  "subagent-driven-development",
-  "to-prd",
-  "using-goals",
-  "workspace-steward",
-  "write-a-skill",
 ]
 
 # No Claude agent is maintained as a separate source. Every Claude agent
@@ -89,21 +47,11 @@ agents = []
 
 # Other Claude agents derive from codex/agents/<name>.toml at install time.
 derived_agents = [
-  "behavior-validator",
-  "algorithm-critic",
-  "neutral-critic",
-  "progress-monitor",
-  "repo-explorer",
-  "research-critic",
-  "reuse-critic",
-  "reviewer",
-  "verifier",
 ]
 
 [config]
-review_file = "config.review.toml"
-install_mode = "overlay"
-reason = "Reviewed keys overlay live config.toml while generated and machine-local state remains untouched."
+review_files = []
+reason = "The active portable route is intentionally blank. Retired reviewed keys are removed only through manifests/portable-retirements.json."
 
 [repo_only]
 # These paths are repository-root paths. Installed Codex and Claude surfaces are
@@ -127,8 +75,10 @@ dirs = [
   ".github",
   "apps",
   "carried",
+  "external-sources",
   "local-docs",
   "manifests",
+  "project-templates",
   "scripts",
   "workflows",
 ]

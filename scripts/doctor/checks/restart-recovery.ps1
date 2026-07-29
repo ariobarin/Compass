@@ -103,7 +103,16 @@ else {
     $oldCodexHome = [Environment]::GetEnvironmentVariable("CODEX_HOME", "Process")
 
     try {
-        $restartRecoveryBootUtc = (Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToUniversalTime()
+        try {
+            $restartRecoveryBootUtc = (Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).LastBootUpTime.ToUniversalTime()
+        }
+        catch {
+            # The fixture needs a stable boundary, not the real host boot time.
+            # Restricted shells may deny CIM access.
+            $tickBytes = [BitConverter]::GetBytes([Environment]::TickCount)
+            $uptimeMilliseconds = [BitConverter]::ToUInt32($tickBytes, 0)
+            $restartRecoveryBootUtc = (Get-Date).ToUniversalTime().AddMilliseconds(-1 * [double]$uptimeMilliseconds)
+        }
         New-Item -ItemType Directory -Force -Path $restartRecoveryTemp | Out-Null
         $fakeBin = Join-Path $restartRecoveryTemp "bin"
         New-Item -ItemType Directory -Force -Path $fakeBin | Out-Null
@@ -260,7 +269,7 @@ else {
         }
     }
     catch {
-        Add-RestartRecoveryProblem "fixture check threw: $($_.Exception.Message)"
+        Add-RestartRecoveryProblem "fixture check threw: $($_.Exception.Message) at $($_.ScriptStackTrace)"
     }
     finally {
         [Environment]::SetEnvironmentVariable("PATH", $oldPath, "Process")

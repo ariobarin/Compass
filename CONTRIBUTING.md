@@ -24,10 +24,13 @@ behavior just because it happened to be useful once.
 
 ## Scope
 
-Installed agentic behavior belongs under `codex/AGENTS.md`, `codex/agents/`,
-or `codex/skills/`. User skills install from `codex/skills/` into
-`$HOME/.agents/skills`. Repo-maintainer guidance belongs in `AGENTS.md`,
-`workflows/`, `local-docs/`, `manifests/`, or `scripts/`.
+The authored Codex, user-skill, Claude, hook, and reviewed-config install route
+is intentionally blank. Repo-maintainer guidance belongs in `AGENTS.md`,
+`workflows/`, `local-docs/`, `manifests/`, or `scripts/`. Carried packs,
+project templates, and frozen external sources stay repository-only.
+
+Any global add-back requires explicit user approval and a separate reviewed
+change. Do not recreate retired source paths as part of routine maintenance.
 
 Use the narrowest surface that fits the change. A skill should teach a durable
 role or capability. A workflow should capture a recurring repo process. A script

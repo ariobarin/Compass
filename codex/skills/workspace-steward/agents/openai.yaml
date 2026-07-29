@@ -1,7 +1,0 @@
-interface:
-  display_name: "Workspace Steward"
-  short_description: "Organize parallel agent work by lifecycle"
-  default_prompt: "Use $workspace-steward to make this workspace easy to isolate, resume, review, and retire across repositories, worktrees, control docs, experiments, evidence, scratch, and archives."
-
-policy:
-  allow_implicit_invocation: true

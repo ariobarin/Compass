@@ -22,6 +22,7 @@ MANIFEST_ARRAYS = {
     "codex": ("files", "dirs"),
     "agents": ("skills", "stateful_skills"),
     "claude": ("files", "derived_skills", "agents", "derived_agents"),
+    "config": ("review_files",),
     "repo_only": ("files", "dirs"),
     "local_only": ("files", "dirs", "patterns"),
 }
@@ -29,7 +30,7 @@ MANIFEST_STRINGS = {
     "codex": ("home",),
     "agents": ("home", "skills_dir"),
     "claude": ("home", "skills_dir", "agents_dir"),
-    "config": ("review_file", "install_mode", "reason"),
+    "config": ("reason",),
     "repo_only": ("reason",),
 }
 MANIFEST_BOOLEANS: dict[str, tuple[str, ...]] = {}
@@ -122,9 +123,6 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
             require_string(table, section, key)
         for key in MANIFEST_BOOLEANS.get(section, ()):
             require_boolean(table, section, key)
-
-    if manifest["config"]["install_mode"] != "overlay":
-        raise ValueError("manifest [config].install_mode must be overlay")
 
     skills = set(manifest["agents"]["skills"])
     unknown_stateful = sorted(set(manifest["agents"]["stateful_skills"]) - skills)

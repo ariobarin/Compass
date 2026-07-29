@@ -144,7 +144,11 @@ function Test-ReceiptTargetSetEqual {
     if ($null -eq $Receipt) {
         return $false
     }
-    $expected = @(@($ActiveItems.LivePath) + @($RetiredItems.LivePath) | Sort-Object -Unique)
+    $expected = @(
+        @($ActiveItems | ForEach-Object { $_.LivePath }) +
+        @($RetiredItems | ForEach-Object { $_.LivePath }) |
+            Sort-Object -Unique
+    )
     $actual = @(@($Receipt.artifacts | ForEach-Object { $_.target }) | Sort-Object -Unique)
     return @(Compare-Object -ReferenceObject $expected -DifferenceObject $actual).Count -eq 0
 }
@@ -175,12 +179,12 @@ $liveHome = Get-CodexHome -CodexHome $CodexHome
 $agentsHome = Get-AgentsHome -AgentsHome $AgentsHome
 $claudeHome = Get-ClaudeHome -ClaudeHome $ClaudeHome
 $items = @(Get-PortableFileMap -RepoRoot $repoRoot -CodexHome $liveHome -AgentsHome $agentsHome -ClaudeHome $claudeHome)
-$retiredItems = @(Get-RetiredPortableFileMap -CodexHome $liveHome -AgentsHome $agentsHome)
+$retiredItems = @(Get-RetiredPortableFileMap -CodexHome $liveHome -AgentsHome $agentsHome -ClaudeHome $claudeHome)
 $currentReceipt = Get-PortableCurrentReceipt -CodexHome $liveHome
 $reviewedConfigContract = Get-ReviewedConfigContract -RepoRoot $repoRoot -CodexHome $liveHome
 $reviewConfigPath = $reviewedConfigContract.ReviewPath
 $liveConfigPath = $reviewedConfigContract.LivePath
-$reviewedConfigState = Get-ReviewedConfigState -ReviewPath $reviewConfigPath -LivePath $liveConfigPath
+$reviewedConfigState = Get-ReviewedConfigState -ReviewPath $reviewConfigPath -RetirementPath $reviewedConfigContract.RetirementPath -LivePath $liveConfigPath
 
 $itemStates = @(
     foreach ($item in $items) {
@@ -199,7 +203,11 @@ $itemStates = @(
 $retiredStates = @(
     foreach ($item in $retiredItems) {
         $exists = Test-Path -LiteralPath $item.LivePath
-        $owned = Test-PortableReceiptOwnsTarget -Receipt $currentReceipt -Target $item.LivePath
+        $receiptArtifact = Get-PortableReceiptArtifact -Receipt $currentReceipt -Target $item.LivePath
+        $owned = $exists -and
+            $null -ne $receiptArtifact -and
+            [string]$receiptArtifact.state -eq "present" -and
+            (Test-PortableFingerprintMatches -Expected $receiptArtifact.fingerprint -Path $item.LivePath)
         [pscustomobject]@{
             Item = $item
             Exists = $exists
@@ -218,6 +226,7 @@ $blockedForeignStates = @(
         $foreignStates
     }
 )
+$blockedConfigStates = @($reviewedConfigState.blocked)
 $installStates = @($itemStates | Where-Object { -not $_.InSync -and ($Adopt -or -not $_.Foreign) })
 $missingStates = @($itemStates | Where-Object { -not $_.Exists })
 $changedStates = @($installStates | Where-Object { $_.Exists })
@@ -249,6 +258,13 @@ if (-not $Apply) {
     else {
         foreach ($change in @($reviewedConfigState.changes)) {
             Write-Host "  $($change.path): $($change.actual) -> $($change.expected)"
+        }
+    }
+    if ($blockedConfigStates.Count -gt 0) {
+        Write-Host ""
+        Write-Host "blocked retired config entries:"
+        foreach ($change in $blockedConfigStates) {
+            Write-Host "  $($change.path): $($change.actual), prior expected $($change.expected)"
         }
     }
 
@@ -292,6 +308,13 @@ if ($blockedForeignStates.Count -gt 0) {
         Write-Host "  $($state.Item.LivePath)"
     }
     throw "rerun with -Adopt to replace or remove foreign targets"
+}
+if ($blockedConfigStates.Count -gt 0) {
+    Write-Host "retired config entries changed from their prior reviewed values:"
+    foreach ($change in $blockedConfigStates) {
+        Write-Host "  $($change.path): $($change.actual), prior expected $($change.expected)"
+    }
+    throw "changed retired config entries require manual resolution"
 }
 
 if (-not $SkipPluginRetirement) {
@@ -360,7 +383,7 @@ foreach ($state in $retiredRemovalStates) {
     Write-Host "removed retired: $($item.LivePath)"
 }
 
-if (-not $SkipSkillRuntimeSetup) {
+if (-not $SkipSkillRuntimeSetup -and @(Get-PortableSkillNames).Count -gt 0) {
     & (Join-Path $PSScriptRoot "setup-skill-runtime.ps1") -AgentsHome $agentsHome
     if ($LASTEXITCODE -ne 0) {
         throw "skill runtime setup failed"
@@ -392,10 +415,10 @@ if ([bool]$reviewedConfigState.changed) {
         backup_path = $backupPath
         after = Get-PortablePathFingerprint -Path $liveConfigPath
     })
-    Write-Host "reviewed config overlaid: $liveConfigPath ($($reviewedConfigState.changed_count) settings)"
+    Write-Host "reviewed config updated: $liveConfigPath ($($reviewedConfigState.changed_count) settings)"
 }
 else {
-    Write-Host "reviewed config unchanged: $liveConfigPath"
+    Write-Host "portable config unchanged: $liveConfigPath"
 }
 
 $targetSetChanged = -not (Test-ReceiptTargetSetEqual -Receipt $currentReceipt -ActiveItems $items -RetiredItems $retiredItems)

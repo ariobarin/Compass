@@ -237,7 +237,7 @@ def parse_reviewed(text: str) -> list[ReviewedEntry]:
         )
 
     if not entries:
-        raise ReviewedConfigError("reviewed config fragment contains no managed settings")
+        return []
 
     try:
         parsed = tomllib.loads(text)
@@ -274,6 +274,38 @@ def parse_live(text: str, entries: list[ReviewedEntry]) -> dict[str, Any]:
     if not isinstance(parsed, dict):
         raise ReviewedConfigError("live config.toml root must be a table")
     return parsed
+
+
+def parse_retirements(path: Path) -> list[ReviewedEntry]:
+    try:
+        data = json.loads(read_text(path))
+    except json.JSONDecodeError as error:
+        raise ReviewedConfigError(f"invalid portable retirement manifest: {error}") from error
+    if data.get("schema_version") != 1:
+        raise ReviewedConfigError("unsupported portable retirement manifest schema version")
+    entries: list[ReviewedEntry] = []
+    seen: set[tuple[str, ...]] = set()
+    for order, item in enumerate(data.get("config_entries", [])):
+        dotted = item.get("path")
+        value = item.get("expected")
+        if not isinstance(dotted, str) or not TABLE_RE.fullmatch(dotted):
+            raise ReviewedConfigError(f"invalid retired config path: {dotted!r}")
+        if type(value) not in (str, int, bool):
+            raise ReviewedConfigError(f"invalid retired config value for {dotted}")
+        parts = tuple(dotted.split("."))
+        if parts in seen:
+            raise ReviewedConfigError(f"duplicate retired config key: {dotted}")
+        seen.add(parts)
+        entries.append(
+            ReviewedEntry(
+                table=parts[:-1],
+                key=parts[-1],
+                value=value,
+                raw_value=toml_display(value),
+                order=order,
+            )
+        )
+    return entries
 
 
 def table_header(stripped: str) -> tuple[str, ...] | None:
@@ -480,29 +512,91 @@ def merge_text(
     return "".join(lines)
 
 
-def evaluate(reviewed_path: Path, live_path: Path) -> dict[str, Any]:
-    reviewed_text = read_text(reviewed_path)
+def retire_text(
+    live_text: str,
+    entries: list[ReviewedEntry],
+    parsed_live: dict[str, Any],
+) -> tuple[str, list[dict[str, str]], list[dict[str, str]]]:
+    removable: list[ReviewedEntry] = []
+    blocked: list[dict[str, str]] = []
+    for entry in entries:
+        actual = lookup(parsed_live, entry.path_parts)
+        if actual is MISSING:
+            continue
+        if type(actual) is type(entry.value) and actual == entry.value:
+            removable.append(entry)
+        else:
+            blocked.append(
+                {
+                    "path": entry.path,
+                    "kind": "retirement-mismatch",
+                    "actual": toml_display(actual),
+                    "expected": toml_display(entry.value),
+                }
+            )
+
+    if not removable:
+        return live_text, [], blocked
+
+    lines, locations, _ = locate_assignments(live_text, removable, parsed_live)
+    changes: list[dict[str, str]] = []
+    for entry in removable:
+        location = locations[entry.path_parts]
+        line = lines[location.line_index]
+        logical = line.rstrip("\r\n")
+        ending = line[len(logical) :]
+        _, comment_index = scan_code(logical)
+        if comment_index is None:
+            lines[location.line_index] = ""
+        else:
+            indentation = logical[: len(logical) - len(logical.lstrip())]
+            lines[location.line_index] = indentation + logical[comment_index:] + ending
+        changes.append(
+            {
+                "path": entry.path,
+                "kind": "retire",
+                "actual": toml_display(entry.value),
+                "expected": "missing",
+            }
+        )
+    return "".join(lines), changes, blocked
+
+
+def evaluate(
+    reviewed_path: Path | None,
+    retirement_path: Path,
+    live_path: Path,
+) -> dict[str, Any]:
+    reviewed_text = read_text(reviewed_path) if reviewed_path else ""
     live_text = read_text(live_path, missing_ok=True)
     entries = parse_reviewed(reviewed_text)
-    parsed_live = parse_live(live_text, entries)
+    retired_entries = parse_retirements(retirement_path)
+    parsed_live = parse_live(live_text, [*entries, *retired_entries])
     changes = build_changes(entries, parsed_live)
     merged = merge_text(live_text, reviewed_text, entries, parsed_live)
+    retired_text, retirement_changes, blocked = retire_text(
+        merged, retired_entries, parse_live(merged, [*entries, *retired_entries])
+    )
     if not changes and merged != live_text:
         raise ReviewedConfigError("internal error: unchanged config produced rewritten text")
     return {
         "schema_version": 1,
         "reviewed_count": len(entries),
-        "changed_count": len(changes),
-        "changed": bool(changes),
+        "retired_count": len(retired_entries),
+        "changed_count": len(changes) + len(retirement_changes),
+        "blocked_count": len(blocked),
+        "changed": bool(changes or retirement_changes),
         "live_exists": live_path.exists(),
-        "changes": changes,
-        "merged_text": merged,
+        "changes": [*changes, *retirement_changes],
+        "blocked": blocked,
+        "merged_text": retired_text,
     }
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--reviewed-config", type=Path, required=True)
+    parser.add_argument("--reviewed-config", type=Path)
+    parser.add_argument("--retirement-manifest", type=Path, required=True)
     parser.add_argument("--live-config", type=Path, required=True)
     return parser.parse_args()
 
@@ -510,7 +604,9 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     try:
-        result = evaluate(args.reviewed_config, args.live_config)
+        result = evaluate(
+            args.reviewed_config, args.retirement_manifest, args.live_config
+        )
     except ReviewedConfigError as error:
         print(error, file=sys.stderr)
         return 1

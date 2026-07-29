@@ -12,10 +12,9 @@ At initialization, the server includes its separately authored ChatGPT profile p
 - `search` and `fetch` expose the same content through the standard read-only knowledge shapes.
 
 
-The app profile is maintained separately from `codex/AGENTS.md` and
-`claude/CLAUDE.md`. It carries shared engineering preferences without importing
-Codex-only Sol and Luna routing or Claude-only GLM-5.2 assumptions into regular
-ChatGPT chat mode.
+The app profile is app-local and separate from the intentionally blank Codex and
+Claude global install route. It does not authorize recreating a retired global
+source or installing app guidance into either runtime.
 
 The app does not install global config, run hooks, mutate the repository, or create subagents. Native subagents remain a host capability. A later server-side workflow can add explicit multi-agent execution without pretending it is native ChatGPT delegation.
 

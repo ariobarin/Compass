@@ -45,7 +45,7 @@ function Get-ClaudeHome {
 $script:PortablePythonRunner = $null
 $script:PortableGeneratedData = $null
 $script:PortableResolvedClaudeHome = $null
-$script:PortableRetiredFileManifest = $null
+$script:PortableRetirementManifest = $null
 
 # Maximum allowed length of a skill description, shared by the Codex and Claude
 # skill checks. test-compass-architecture.py asserts this equals its own
@@ -68,8 +68,15 @@ function Get-PortablePythonRunner {
             continue
         }
 
-        & $candidate.Command @($candidate.Prefix) -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)" *> $null
-        if ($LASTEXITCODE -eq 0) {
+        $runnerWorks = $false
+        try {
+            & $candidate.Command @($candidate.Prefix) -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)" *> $null
+            $runnerWorks = $LASTEXITCODE -eq 0
+        }
+        catch {
+            $runnerWorks = $false
+        }
+        if ($runnerWorks) {
             $script:PortablePythonRunner = $candidate
             return $candidate
         }
@@ -205,46 +212,33 @@ function Get-PortableClaudeDerivedAgentNames {
     return Get-PortableManifestArray -Section "claude" -Key "derived_agents"
 }
 
-function Get-PortableRetiredFileManifest {
-    if ($script:PortableRetiredFileManifest) {
-        return $script:PortableRetiredFileManifest
+function Get-PortableRetirementManifest {
+    if ($script:PortableRetirementManifest) {
+        return $script:PortableRetirementManifest
     }
 
-    $path = Join-Path (Get-RepoRoot) "manifests\retired-skills.json"
+    $path = Join-Path (Get-RepoRoot) "manifests\portable-retirements.json"
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-        throw "missing retired skill manifest: $path"
+        throw "missing portable retirement manifest: $path"
     }
 
     try {
         $manifest = Get-Content -Raw -LiteralPath $path | ConvertFrom-Json
     }
     catch {
-        throw "invalid retired skill manifest: $($_.Exception.Message)"
+        throw "invalid portable retirement manifest: $($_.Exception.Message)"
     }
 
     if ($manifest.schema_version -ne 1) {
-        throw "unsupported retired skill manifest schema version"
+        throw "unsupported portable retirement manifest schema version"
     }
 
-    $script:PortableRetiredFileManifest = $manifest
+    $script:PortableRetirementManifest = $manifest
     return $manifest
 }
 
-# Claude agent frontmatter is install wiring, not runtime guidance, so it lives
-# here next to the derive transform instead of in the manifest. Each derived
-# agent gets these tools and color; model is always inherit. The reviewer
-# coordinator has no tools entry, so its derived file omits the tools line.
-$script:ClaudeDerivedAgentFrontmatter = @{
-    "behavior-validator" = @{ Tools = "Read, Grep, Glob, Bash"; Color = "red" }
-    "algorithm-critic"   = @{ Tools = "Read, Grep, Glob, Bash"; Color = "red" }
-    "neutral-critic"     = @{ Tools = "Read, Grep, Glob, Bash"; Color = "red" }
-    "progress-monitor"   = @{ Tools = "Read, Grep, Glob, Bash"; Color = "yellow" }
-    "repo-explorer"      = @{ Tools = "Read, Grep, Glob, Bash"; Color = "blue" }
-    "research-critic"    = @{ Tools = "Read, Grep, Glob, Bash, WebSearch, WebFetch"; Color = "red" }
-    "reuse-critic"       = @{ Tools = "Read, Grep, Glob, Bash"; Color = "red" }
-    "reviewer"           = @{ Color = "purple" }
-    "verifier"           = @{ Tools = "Read, Grep, Glob, Bash"; Color = "green" }
-}
+# No active Claude agents are derived in the authored blank state.
+$script:ClaudeDerivedAgentFrontmatter = @{}
 
 function Get-TopLevelTomlStringValues {
     param([string]$Text)
@@ -307,7 +301,7 @@ function Get-PortableFileMap {
 
     $items = New-Object System.Collections.Generic.List[object]
 
-    foreach ($relative in @("AGENTS.md", "hooks.json", "keybindings.json")) {
+    foreach ($relative in Get-PortableManifestArray -Section "codex" -Key "files") {
         $items.Add([pscustomobject]@{
             Type = "file"
             RepoPath = Join-Path (Join-Path $RepoRoot "codex") $relative
@@ -317,7 +311,7 @@ function Get-PortableFileMap {
         })
     }
 
-    foreach ($relative in @("agents", "hooks")) {
+    foreach ($relative in Get-PortableManifestArray -Section "codex" -Key "dirs") {
         $items.Add([pscustomobject]@{
             Type = "dir"
             RepoPath = Join-Path (Join-Path $RepoRoot "codex") $relative
@@ -402,56 +396,36 @@ function Get-PortableFileMap {
 function Get-RetiredPortableFileMap {
     param(
         [string]$CodexHome,
-        [string]$AgentsHome
+        [string]$AgentsHome,
+        [string]$ClaudeHome
     )
 
     $items = New-Object System.Collections.Generic.List[object]
 
-    $retired = Get-PortableRetiredFileManifest
-
-    # The Codex home once held skills directly. Sweep both the current skill
-    # names and the retired set so legacy installs clean up completely.
-    foreach ($skill in @(@(Get-PortableSkillNames) + @($retired.codex_home_skills))) {
-        $items.Add([pscustomobject]@{
-            Type = "dir"
-            LivePath = Join-Path (Join-Path $CodexHome "skills") $skill
-            LiveRoot = $CodexHome
-            BackupScope = "codex"
-        })
+    if (-not $ClaudeHome) {
+        $ClaudeHome = Get-ClaudeHome
     }
-
-    # Keep retired user-skill removals explicit so install does not delete
-    # unrelated personal skills that Compass does not own.
-    foreach ($skill in @($retired.user_skills_home)) {
-        $items.Add([pscustomobject]@{
-            Type = "dir"
-            LivePath = Join-Path (Join-Path $AgentsHome "skills") $skill
-            LiveRoot = $AgentsHome
-            BackupScope = "agents"
-        })
+    $roots = @{
+        codex = $CodexHome
+        agents = $AgentsHome
+        claude = $ClaudeHome
     }
-
-    # Get-PortableFileMap runs first in install and verification, so this retains
-    # an explicitly supplied Claude home without coupling callers to another map argument.
-    $claudeHome = $script:PortableResolvedClaudeHome
-    if (-not $claudeHome) {
-        $claudeHome = Get-ClaudeHome
-    }
-    foreach ($skill in @($retired.claude_skills)) {
+    $retired = Get-PortableRetirementManifest
+    foreach ($entry in @($retired.items)) {
+        if ($entry.scope -notin @("codex", "agents", "claude")) {
+            throw "unsupported portable retirement scope: $($entry.scope)"
+        }
+        if ($entry.type -notin @("file", "dir")) {
+            throw "unsupported portable retirement type: $($entry.type)"
+        }
+        $root = $roots[[string]$entry.scope]
+        $livePath = Join-Path $root ([string]$entry.path)
+        Assert-PathUnderRoot -Path $livePath -Root $root
         $items.Add([pscustomobject]@{
-            Type = "dir"
-            LivePath = Join-Path (Join-Path $claudeHome "skills") $skill
-            LiveRoot = $claudeHome
-            BackupScope = "claude"
-        })
-    }
-
-    foreach ($agent in @($retired.claude_agents)) {
-        $items.Add([pscustomobject]@{
-            Type = "file"
-            LivePath = Join-Path (Join-Path $claudeHome "agents") $agent
-            LiveRoot = $claudeHome
-            BackupScope = "claude"
+            Type = [string]$entry.type
+            LivePath = $livePath
+            LiveRoot = $root
+            BackupScope = [string]$entry.scope
         })
     }
 
