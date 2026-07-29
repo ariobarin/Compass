@@ -41,9 +41,8 @@ jobs:
         shell: pwsh
         run: |
           $files = @(
-            Get-ChildItem codex/hooks -Recurse -File -Filter *.py
-            Get-ChildItem codex/skills -Recurse -File -Filter *.py
             Get-ChildItem carried -Recurse -File -Filter *.py
+            Get-ChildItem external-sources -Recurse -File -Filter *.py
             Get-ChildItem scripts -File -Filter *.py
           )
           foreach ($file in $files) {
@@ -54,10 +53,6 @@ jobs:
       - name: Test Compass architecture
         shell: pwsh
         run: python scripts/test-compass-architecture.py
-
-      - name: Test behavior-validator isolation
-        shell: pwsh
-        run: python scripts/test-behavior-validator-workspace.py
 
       - name: Test reviewed config
         shell: pwsh
@@ -76,10 +71,6 @@ jobs:
         shell: pwsh
         run: ./scripts/test-retire-plugins.ps1
 
-      - name: Test review bundle isolation
-        shell: pwsh
-        run: python scripts/test-review-bundle.py
-
       - name: Validate policy contracts
         shell: pwsh
         run: python scripts/validate-policy-contracts.py
@@ -87,11 +78,6 @@ jobs:
       - name: Validate skill sources
         shell: pwsh
         run: python scripts/validate-skill-sources.py
-
-      - name: Check shell launcher syntax
-        if: runner.os == 'Linux'
-        shell: bash
-        run: bash -n codex/hooks/portable_guard.sh
 
       - name: Check shell line endings
         shell: pwsh
@@ -148,25 +134,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Run install round trip
-        id: roundtrip
-        continue-on-error: true
         shell: pwsh
         run: ./scripts/test-install-roundtrip.ps1
-
-      - name: Upload round-trip diagnostics
-        if: steps.roundtrip.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: install-roundtrip-diagnostics
-          path: compass-roundtrip-error.txt
-          if-no-files-found: error
-
-      - name: Fail failed round trip
-        if: steps.roundtrip.outcome == 'failure'
-        shell: pwsh
-        run: exit 1
 
   compass-mcp:
     runs-on: ubuntu-latest

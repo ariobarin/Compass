@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 import tempfile
 import tomllib
@@ -54,15 +55,35 @@ last_refresh = "machine-local"
 
 
 class ReviewedConfigTests(unittest.TestCase):
-    def evaluate(self, reviewed: str = REVIEWED, live: str | None = LIVE):
+    def evaluate(
+        self,
+        reviewed: str | None = REVIEWED,
+        live: str | None = LIVE,
+        retirements: list[dict[str, object]] | None = None,
+    ):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             reviewed_path = root / "config.review.toml"
+            retirement_path = root / "portable-retirements.json"
             live_path = root / "config.toml"
-            reviewed_path.write_text(reviewed, encoding="utf-8", newline="")
+            if reviewed is not None:
+                reviewed_path.write_text(reviewed, encoding="utf-8", newline="")
+            retirement_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "config_entries": retirements or [],
+                    }
+                ),
+                encoding="utf-8",
+            )
             if live is not None:
                 live_path.write_text(live, encoding="utf-8", newline="")
-            return reviewed_config.evaluate(reviewed_path, live_path)
+            return reviewed_config.evaluate(
+                reviewed_path if reviewed is not None else None,
+                retirement_path,
+                live_path,
+            )
 
     def test_overlay_preserves_unreviewed_state(self):
         result = self.evaluate()
@@ -163,6 +184,46 @@ class ReviewedConfigTests(unittest.TestCase):
     def test_existing_unsupported_managed_syntax_fails_safely(self):
         with self.assertRaisesRegex(reviewed_config.ReviewedConfigError, "unsupported or ambiguous"):
             self.evaluate(reviewed='[agents]\nmax_depth = 2\n', live='agents.max_depth = 1\n')
+
+    def test_empty_active_config_retires_exact_values(self):
+        live = (
+            '# root comment\n'
+            'model = "gpt-5.6-sol" # retained explanation\n'
+            'custom = "keep"\n'
+            '\n'
+            '[agents]\n'
+            'max_depth = 2\n'
+            'custom_agent = "keep"\n'
+        )
+        result = self.evaluate(
+            reviewed=None,
+            live=live,
+            retirements=[
+                {"path": "model", "expected": "gpt-5.6-sol"},
+                {"path": "agents.max_depth", "expected": 2},
+            ],
+        )
+        self.assertTrue(result["changed"])
+        self.assertEqual(result["reviewed_count"], 0)
+        self.assertEqual(result["changed_count"], 2)
+        self.assertEqual(result["blocked_count"], 0)
+        self.assertIn("# root comment", result["merged_text"])
+        self.assertIn("# retained explanation", result["merged_text"])
+        self.assertIn('custom = "keep"', result["merged_text"])
+        self.assertIn('custom_agent = "keep"', result["merged_text"])
+        self.assertNotIn('model = ', result["merged_text"])
+        self.assertNotIn('max_depth = ', result["merged_text"])
+
+    def test_retired_config_mismatch_blocks_without_rewrite(self):
+        live = 'model = "user-model"\ncustom = "keep"\n'
+        result = self.evaluate(
+            reviewed=None,
+            live=live,
+            retirements=[{"path": "model", "expected": "gpt-5.6-sol"}],
+        )
+        self.assertFalse(result["changed"])
+        self.assertEqual(result["blocked_count"], 1)
+        self.assertEqual(result["merged_text"], live)
 
 
 if __name__ == "__main__":

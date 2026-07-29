@@ -36,27 +36,10 @@ else {
             }
         }
 
-        # The active reviewed config must match exactly one tier row.
-        $configPath = Join-Path $repoRoot "codex\config.review.toml"
-        $configText = Get-Content -Raw -LiteralPath $configPath
-        $modelMatch = [regex]::Match($configText, '(?m)^model\s*=\s*"([^"]+)"')
-        $effortMatch = [regex]::Match($configText, '(?m)^model_reasoning_effort\s*=\s*"([^"]+)"')
-        if (-not $modelMatch.Success -or -not $effortMatch.Success) {
-            $problems.Add("codex config.review.toml missing model or model_reasoning_effort")
-        }
-        else {
-            $activeModel = $modelMatch.Groups[1].Value
-            $activeEffort = $effortMatch.Groups[1].Value
-            $matched = $false
-            foreach ($tier in $tiers) {
-                if ($tier.model -eq $activeModel -and $tier.effort -eq $activeEffort) {
-                    $matched = $true
-                    break
-                }
-            }
-            if (-not $matched) {
-                $problems.Add("codex config.review.toml model $activeModel effort $activeEffort is not a reviewed tier")
-            }
+        # The blank portable route has no active reviewed model selection.
+        $activeReviewFiles = @(Get-PortableManifestArray -Section "config" -Key "review_files")
+        if ($activeReviewFiles.Count -ne 0) {
+            $problems.Add("blank portable config must not select an active model tier")
         }
     }
     catch {

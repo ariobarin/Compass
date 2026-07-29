@@ -5,11 +5,16 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$testRoot = Join-Path ([System.IO.Path]::GetTempPath()) "compass-roundtrip-$([guid]::NewGuid().ToString('N'))"
+$baseCommit = "349b94acad6175561e56304704856c5632db6b6c"
+$testRoot = Join-Path ([System.IO.Path]::GetTempPath()) "compass-blank-roundtrip-$([guid]::NewGuid().ToString('N'))"
 $codexHome = Join-Path $testRoot "codex"
 $agentsHome = Join-Path $testRoot "agents"
 $claudeHome = Join-Path $testRoot "claude"
+$oldSourceRoot = Join-Path $testRoot "old-source"
 $powerShellPath = (Get-Process -Id $PID).Path
+
+. "$PSScriptRoot\common.ps1"
+. "$PSScriptRoot\receipt-common.ps1"
 
 function Invoke-TestScript {
     param(
@@ -23,58 +28,59 @@ function Invoke-TestScript {
         $processArguments += @("-ExecutionPolicy", "Bypass")
     }
     $processArguments += @("-File", $Path) + $Arguments
-
-    $output = @(& $powerShellPath @processArguments 2>&1 | ForEach-Object { $_.ToString() })
-    $exitCode = $LASTEXITCODE
+    $oldErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $output = @(& $powerShellPath @processArguments 2>&1 | ForEach-Object { $_.ToString() })
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $oldErrorActionPreference
+    }
     if ($exitCode -ne $ExpectedExitCode) {
-        $output | ForEach-Object { Write-Host $_ }
-        $detail = $output -join "`n"
-        throw "expected exit code $ExpectedExitCode from $Path, got $exitCode`n$detail"
+        throw "expected exit code $ExpectedExitCode from $Path, got $exitCode`n$($output -join "`n")"
     }
     return $output
 }
 
+function Write-Utf8Text {
+    param([string]$Path, [string]$Text)
+
+    New-Item -ItemType Directory -Force (Split-Path -Parent $Path) | Out-Null
+    [System.IO.File]::WriteAllText($Path, $Text, [System.Text.UTF8Encoding]::new($false))
+}
+
 function Assert-PathPresent {
     param([string]$Path)
-
     if (-not (Test-Path -LiteralPath $Path)) {
-        throw "expected installed path: $Path"
+        throw "expected path: $Path"
     }
 }
 
-function Assert-TextContains {
-    param(
-        [string]$Text,
-        [string]$Expected
-    )
-
-    if (-not $Text.Contains($Expected)) {
-        throw "expected text was not preserved: $Expected"
+function Assert-PathAbsent {
+    param([string]$Path)
+    if (Test-Path -LiteralPath $Path) {
+        throw "expected absent path: $Path"
     }
+}
+
+function Get-RootsState {
+    return @(
+        Get-PortablePathFingerprint -Path $codexHome
+        Get-PortablePathFingerprint -Path $agentsHome
+        Get-PortablePathFingerprint -Path $claudeHome
+    ) | ConvertTo-Json -Compress -Depth 12
 }
 
 try {
-    New-Item -ItemType Directory -Force $codexHome, $agentsHome, $claudeHome | Out-Null
-    $configPath = Join-Path $codexHome "config.toml"
-    $originalConfig = @"
-model = "old-model"
-service_tier = "flex"
-custom_root_value = "keep"
+    New-Item -ItemType Directory -Force $codexHome, $agentsHome, $claudeHome, $oldSourceRoot | Out-Null
 
-[agents]
-max_depth = 1
-custom_agent_value = "keep"
-
-[mcp_servers.example]
-command = "machine-local-command"
-
-[projects.'C:\work\example']
-trust_level = "trusted"
-
-[generated_marketplace]
-last_refresh = "machine-local"
-"@
-    [System.IO.File]::WriteAllText($configPath, $originalConfig, [System.Text.UTF8Encoding]::new($false))
+    $archivePath = Join-Path $testRoot "base.zip"
+    & git -c "safe.directory=$repoRoot" -C $repoRoot archive --format=zip --output=$archivePath $baseCommit
+    if ($LASTEXITCODE -ne 0) {
+        throw "could not archive base $baseCommit"
+    }
+    Expand-Archive -LiteralPath $archivePath -DestinationPath $oldSourceRoot
 
     $homeArguments = @(
         "-CodexHome", $codexHome,
@@ -83,212 +89,249 @@ last_refresh = "machine-local"
         "-SkipPluginRetirement",
         "-SkipSkillRuntimeSetup"
     )
-    $diffArguments = @(
-        "-CodexHome", $codexHome,
-        "-AgentsHome", $agentsHome,
-        "-ClaudeHome", $claudeHome
-    )
-    $installPath = Join-Path $PSScriptRoot "install.ps1"
-    $verifyPath = Join-Path $PSScriptRoot "verify-live.ps1"
-    $diffPath = Join-Path $PSScriptRoot "diff-live.ps1"
+    $blankInstall = Join-Path $PSScriptRoot "install.ps1"
+    $blankVerify = Join-Path $PSScriptRoot "verify-live.ps1"
+    $oldInstall = Join-Path $oldSourceRoot "scripts\install.ps1"
+    $oldVerify = Join-Path $oldSourceRoot "scripts\verify-live.ps1"
 
-    $preflightSentinel = Join-Path $codexHome "AGENTS.md"
-    Set-Content -LiteralPath $preflightSentinel -Encoding utf8NoBOM -Value "preflight sentinel"
-    [void](Invoke-TestScript -Path $installPath -Arguments (@(
+    $configPath = Join-Path $codexHome "config.toml"
+    Write-Utf8Text -Path $configPath -Text @"
+# unrelated root comment
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
+model_context_window = 272000
+model_auto_compact_token_limit = 233000
+model_auto_compact_token_limit_scope = "total"
+personality = "pragmatic"
+sandbox_mode = "danger-full-access"
+approval_policy = "never"
+custom_root_value = "keep"
+
+[agents]
+max_depth = 2
+custom_agent_value = "keep"
+
+[windows]
+sandbox = "elevated"
+
+[notice]
+hide_full_access_warning = true
+
+[features]
+memories = true
+goals = true
+prevent_idle_sleep = true
+
+[features.multi_agent_v2]
+hide_spawn_agent_metadata = false
+tool_namespace = "agents"
+
+[mcp_servers.example]
+command = "machine-local-command"
+"@
+
+    $sentinels = @(
+        (Join-Path $codexHome "foreign\sentinel.txt"),
+        (Join-Path $agentsHome "skills\foreign-skill\sentinel.txt"),
+        (Join-Path $claudeHome "foreign\sentinel.txt")
+    )
+    foreach ($sentinel in $sentinels) {
+        Write-Utf8Text -Path $sentinel -Text "unrelated sentinel`n"
+    }
+
+    $oldConfigTool = Join-Path $oldSourceRoot "scripts\reviewed-config.py"
+    $oldReviewFile = Join-Path $oldSourceRoot "codex\config.review.toml"
+    $runner = Get-PortablePythonRunner
+    $oldConfigOutput = @(& $runner.Command @($runner.Prefix) $oldConfigTool --reviewed-config $oldReviewFile --live-config $configPath)
+    if ($LASTEXITCODE -ne 0) {
+        throw "old-source config restoration failed"
+    }
+    $oldConfigState = ($oldConfigOutput -join "`n") | ConvertFrom-Json
+    Write-Utf8Text -Path $configPath -Text ([string]$oldConfigState.merged_text)
+
+    [void](Invoke-TestScript -Path $oldInstall -Arguments (@(
         "-Apply",
         "-Adopt",
-        "-SourceCommit", "not-the-current-head"
-    ) + $homeArguments) -ExpectedExitCode 1)
-    if ((Get-Content -Raw -LiteralPath $preflightSentinel).Trim() -ne "preflight sentinel") {
-        throw "invalid source commit mutated a live target"
+        "-SourceRef", "base-fixture-$baseCommit"
+    ) + $homeArguments))
+    [void](Invoke-TestScript -Path $oldVerify -Arguments (@(
+        "-SkipCodexCommand",
+        "-SkipPluginCheck",
+        "-RequireInSync"
+    ) + $homeArguments))
+
+    $sentinelHashes = @{}
+    foreach ($sentinel in $sentinels) {
+        $sentinelHashes[$sentinel] = (Get-FileHash -Algorithm SHA256 -LiteralPath $sentinel).Hash
     }
-    foreach ($unexpectedPath in @(
-        (Join-Path $codexHome "portable-backups"),
-        (Join-Path $agentsHome "portable-backups"),
-        (Join-Path $claudeHome "portable-backups"),
-        (Join-Path $codexHome "portable-receipts")
-    )) {
-        if (Test-Path -LiteralPath $unexpectedPath) {
-            throw "invalid source commit created install state: $unexpectedPath"
+
+    $foreignEmptyDirectory = Join-Path $agentsHome "skills\compass\foreign-empty"
+    New-Item -ItemType Directory -Force $foreignEmptyDirectory | Out-Null
+    [void](Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $homeArguments) -ExpectedExitCode 1)
+    Assert-PathPresent -Path $foreignEmptyDirectory
+    Assert-PathPresent -Path (Join-Path $agentsHome "skills\compass\SKILL.md")
+    Remove-Item -LiteralPath $foreignEmptyDirectory -Force
+
+    if ($env:OS -eq "Windows_NT") {
+        $ownedDirectory = Join-Path $agentsHome "skills\compass"
+        $junctionFixture = Join-Path $testRoot "junction-fixture"
+        Copy-Item -LiteralPath $ownedDirectory -Destination $junctionFixture -Recurse
+        $externalSkill = Join-Path $junctionFixture "SKILL.md"
+        $externalSkillHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $externalSkill).Hash
+        Remove-Item -LiteralPath $ownedDirectory -Recurse -Force
+
+        try {
+            try {
+                New-Item -ItemType Junction -Path $ownedDirectory -Target $junctionFixture -ErrorAction Stop | Out-Null
+            }
+            catch {
+                throw "required junction regression could not create junction: $($_.Exception.Message)"
+            }
+
+            $junctionItem = Get-Item -LiteralPath $ownedDirectory -Force
+            if (($junctionItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq 0) {
+                throw "junction regression did not create a reparse point"
+            }
+
+            [void](Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $homeArguments) -ExpectedExitCode 1)
+            Assert-PathPresent -Path $ownedDirectory
+            Assert-PathPresent -Path $externalSkill
+            $junctionItem = Get-Item -LiteralPath $ownedDirectory -Force
+            if (($junctionItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -eq 0) {
+                throw "blocked blank retirement removed the junction"
+            }
+            if ((Get-FileHash -Algorithm SHA256 -LiteralPath $externalSkill).Hash -ne $externalSkillHash) {
+                throw "blocked blank retirement changed the junction target"
+            }
+        }
+        finally {
+            if (Test-Path -LiteralPath $ownedDirectory) {
+                $junctionItem = Get-Item -LiteralPath $ownedDirectory -Force
+                if (($junctionItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                    [System.IO.Directory]::Delete($ownedDirectory)
+                }
+            }
+            if (Test-Path -LiteralPath $junctionFixture) {
+                Remove-Item -LiteralPath $junctionFixture -Recurse -Force
+            }
+        }
+
+        [void](Invoke-TestScript -Path $oldInstall -Arguments (@("-Apply") + $homeArguments))
+        Assert-PathPresent -Path (Join-Path $ownedDirectory "SKILL.md")
+    }
+
+    $ownedDrift = Join-Path $agentsHome "skills\compass\SKILL.md"
+    Add-Content -LiteralPath $ownedDrift -Value "# changed after receipt"
+    [void](Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $homeArguments) -ExpectedExitCode 1)
+    Assert-PathPresent -Path $ownedDrift
+    [void](Invoke-TestScript -Path $oldInstall -Arguments (@("-Apply") + $homeArguments))
+
+    $beforePreview = Get-RootsState
+    $previewOutput = @(Invoke-TestScript -Path $blankInstall -Arguments $homeArguments)
+    if ($previewOutput -notcontains "review mode: no files will be changed") {
+        throw "blank preview did not identify review mode"
+    }
+    if ((Get-RootsState) -ne $beforePreview) {
+        throw "blank preview mutated scratch homes"
+    }
+
+    [void](Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $homeArguments))
+    [void](Invoke-TestScript -Path $blankVerify -Arguments (@(
+        "-SkipCodexCommand",
+        "-SkipPluginCheck",
+        "-RequireInSync"
+    ) + $homeArguments))
+
+    $activeItems = @(Get-PortableFileMap -RepoRoot $repoRoot -CodexHome $codexHome -AgentsHome $agentsHome -ClaudeHome $claudeHome)
+    if ($activeItems.Count -ne 0) {
+        throw "blank active bundle contains $($activeItems.Count) item(s)"
+    }
+    foreach ($retired in @(Get-RetiredPortableFileMap -CodexHome $codexHome -AgentsHome $agentsHome -ClaudeHome $claudeHome)) {
+        Assert-PathAbsent -Path $retired.LivePath
+    }
+
+    foreach ($sentinel in $sentinels) {
+        Assert-PathPresent -Path $sentinel
+        if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sentinel).Hash -ne $sentinelHashes[$sentinel]) {
+            throw "unrelated sentinel changed: $sentinel"
         }
     }
-    Remove-Item -LiteralPath $preflightSentinel -Force
 
-    $reviewOutput = @(Invoke-TestScript -Path $installPath -Arguments $homeArguments)
-    if ($reviewOutput -notcontains "planned reviewed config changes:") {
-        throw "review mode did not report reviewed config drift"
-    }
-    if ((Get-Content -Raw -LiteralPath $configPath) -ne $originalConfig) {
-        throw "review mode changed live config.toml"
-    }
-    if (Test-Path -LiteralPath (Join-Path $codexHome "portable-backups")) {
-        throw "review mode created a backup"
-    }
-
-    $foreignPath = Join-Path (Join-Path (Join-Path $agentsHome "skills") "compass") "SKILL.md"
-    New-Item -ItemType Directory -Force (Split-Path -Parent $foreignPath) | Out-Null
-    Set-Content -LiteralPath $foreignPath -Encoding utf8NoBOM -Value "foreign skill"
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-Apply") + $homeArguments) -ExpectedExitCode 1)
-    if ((Get-Content -Raw -LiteralPath $foreignPath).Trim() -ne "foreign skill") {
-        throw "foreign target changed without explicit adoption"
-    }
-
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-Apply", "-Adopt") + $homeArguments))
-    [void](Invoke-TestScript -Path $verifyPath -Arguments (@("-SkipCodexCommand", "-SkipPluginCheck", "-RequireInSync") + $homeArguments))
-
-    $installedConfig = Get-Content -Raw -LiteralPath $configPath
+    $blankConfig = Get-Content -Raw -LiteralPath $configPath
     foreach ($preserved in @(
-        'service_tier = "flex"',
+        "# unrelated root comment",
         'custom_root_value = "keep"',
         'custom_agent_value = "keep"',
-        '[mcp_servers.example]',
-        'command = "machine-local-command"',
-        "[projects.'C:\work\example']",
-        '[generated_marketplace]',
-        'last_refresh = "machine-local"'
+        "[mcp_servers.example]",
+        'command = "machine-local-command"'
     )) {
-        Assert-TextContains -Text $installedConfig -Expected $preserved
-    }
-    foreach ($managed in @(
-        'model = "gpt-5.6-sol"',
-        'model_auto_compact_token_limit = 233000',
-        'approval_policy = "never"',
-        'max_depth = 2',
-        'sandbox = "elevated"',
-        'hide_full_access_warning = true',
-        'tool_namespace = "agents"'
-    )) {
-        Assert-TextContains -Text $installedConfig -Expected $managed
-    }
-
-    $configBackups = @(Get-ChildItem -LiteralPath (Join-Path $codexHome "portable-backups") -Recurse -File -Filter "config.toml")
-    if ($configBackups.Count -ne 1) {
-        throw "expected exactly one config.toml backup, found $($configBackups.Count)"
-    }
-    if ((Get-Content -Raw -LiteralPath $configBackups[0].FullName) -ne $originalConfig) {
-        throw "config.toml backup did not contain the original live file"
-    }
-
-    $receiptRoot = Join-Path $codexHome "portable-receipts"
-    $currentReceipt = Join-Path $receiptRoot "current.json"
-    Assert-PathPresent -Path $currentReceipt
-    $receiptCountBefore = @(Get-ChildItem -LiteralPath $receiptRoot -File -Filter "install-*.json").Count
-
-    $secondInstall = @(Invoke-TestScript -Path $installPath -Arguments (@("-Apply") + $homeArguments))
-    if (@($secondInstall | Where-Object { $_ -like "installed:*" }).Count -gt 0) {
-        throw "unchanged second install copied portable items"
-    }
-    if ($secondInstall -notcontains "reviewed config unchanged: $configPath") {
-        throw "unchanged second install did not report reviewed config idempotence"
-    }
-    if ($secondInstall -notcontains "backups: none") {
-        throw "unchanged second install created a backup root"
-    }
-    if ($secondInstall -notcontains "receipt: unchanged") {
-        throw "unchanged second install rewrote installation provenance"
-    }
-    $receiptCountAfter = @(Get-ChildItem -LiteralPath $receiptRoot -File -Filter "install-*.json").Count
-    if ($receiptCountAfter -ne $receiptCountBefore) {
-        throw "unchanged second install created another receipt"
-    }
-
-    Assert-PathPresent -Path (Join-Path $codexHome "AGENTS.md")
-    Assert-PathPresent -Path (Join-Path (Join-Path (Join-Path $agentsHome "skills") "compass") "SKILL.md")
-    Assert-PathPresent -Path (Join-Path (Join-Path (Join-Path $agentsHome "skills") "behavior-validator") "SKILL.md")
-    Assert-PathPresent -Path (Join-Path $claudeHome "CLAUDE.md")
-    Assert-PathPresent -Path (Join-Path (Join-Path (Join-Path $claudeHome "skills") "compass") "SKILL.md")
-    Assert-PathPresent -Path (Join-Path (Join-Path (Join-Path $claudeHome "skills") "behavior-validator") "SKILL.md")
-    Assert-PathPresent -Path (Join-Path (Join-Path (Join-Path (Join-Path $claudeHome "skills") "pr-review-loop") "scripts") "build-review-bundle.py")
-    Assert-PathPresent -Path (Join-Path (Join-Path $claudeHome "agents") "progress-monitor.md")
-    Assert-PathPresent -Path (Join-Path (Join-Path $claudeHome "agents") "reviewer.md")
-
-    $whichLlmRoot = Join-Path (Join-Path $agentsHome "skills") "which-llm"
-    Assert-PathPresent -Path (Join-Path (Join-Path $whichLlmRoot "artifacts") "models_enriched.csv")
-    $runtimeArtifact = Join-Path (Join-Path $whichLlmRoot "artifacts") "exports\local.csv"
-    $runtimeCache = Join-Path (Join-Path $whichLlmRoot "__pycache__") "query.pyc"
-    New-Item -ItemType Directory -Force (Split-Path -Parent $runtimeArtifact), (Split-Path -Parent $runtimeCache) | Out-Null
-    Set-Content -LiteralPath $runtimeArtifact -Value "local runtime data"
-    Set-Content -LiteralPath $runtimeCache -Value "local cache"
-    [void](Invoke-TestScript -Path $verifyPath -Arguments (@("-SkipCodexCommand", "-SkipPluginCheck", "-RequireInSync") + $homeArguments))
-    [void](Invoke-TestScript -Path $diffPath -Arguments $diffArguments)
-
-    $whichLlmManagedFile = Join-Path $whichLlmRoot "pick.py"
-    Add-Content -LiteralPath $whichLlmManagedFile -Value "# managed drift"
-    [void](Invoke-TestScript -Path $verifyPath -Arguments (@("-SkipCodexCommand", "-SkipPluginCheck", "-RequireInSync") + $homeArguments) -ExpectedExitCode 1)
-    [void](Invoke-TestScript -Path $diffPath -Arguments $diffArguments -ExpectedExitCode 1)
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-Apply") + $homeArguments))
-    foreach ($runtimePath in @($runtimeArtifact, $runtimeCache)) {
-        Assert-PathPresent -Path $runtimePath
-    }
-    [void](Invoke-TestScript -Path $verifyPath -Arguments (@("-SkipCodexCommand", "-SkipPluginCheck", "-RequireInSync") + $homeArguments))
-
-    $missingConfig = (Get-Content -Raw -LiteralPath $configPath) -replace '(?m)^model_auto_compact_token_limit = 233000\r?\n', ''
-    [System.IO.File]::WriteAllText($configPath, $missingConfig, [System.Text.UTF8Encoding]::new($false))
-    $missingOutput = @(Invoke-TestScript -Path $verifyPath -Arguments (@("-SkipCodexCommand", "-SkipPluginCheck", "-RequireInSync") + $homeArguments) -ExpectedExitCode 1)
-    if (@($missingOutput | Where-Object { $_ -like "*missing reviewed config key: model_auto_compact_token_limit,*" }).Count -eq 0) {
-        throw "verification did not report a missing reviewed config key"
-    }
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-Apply") + $homeArguments))
-
-    $mismatchedConfig = (Get-Content -Raw -LiteralPath $configPath) -replace 'model = "gpt-5.6-sol"', 'model = "wrong-model"'
-    [System.IO.File]::WriteAllText($configPath, $mismatchedConfig, [System.Text.UTF8Encoding]::new($false))
-    $mismatchOutput = @(Invoke-TestScript -Path $verifyPath -Arguments (@("-SkipCodexCommand", "-SkipPluginCheck", "-RequireInSync") + $homeArguments) -ExpectedExitCode 1)
-    if (@($mismatchOutput | Where-Object { $_ -like '*reviewed config mismatch: model = "wrong-model", expected "gpt-5.6-sol"*' }).Count -eq 0) {
-        throw "verification did not report a reviewed config mismatch"
-    }
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-Apply") + $homeArguments))
-    [void](Invoke-TestScript -Path $verifyPath -Arguments (@("-SkipCodexCommand", "-SkipPluginCheck", "-RequireInSync") + $homeArguments))
-
-    $driftPath = Join-Path (Join-Path (Join-Path $agentsHome "skills") "compass") "SKILL.md"
-    Add-Content -LiteralPath $driftPath -Value "roundtrip drift"
-    [void](Invoke-TestScript -Path $verifyPath -Arguments (@("-SkipCodexCommand", "-SkipPluginCheck", "-RequireInSync") + $homeArguments) -ExpectedExitCode 1)
-
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-Apply") + $homeArguments))
-    [void](Invoke-TestScript -Path $verifyPath -Arguments (@("-SkipCodexCommand", "-SkipPluginCheck", "-RequireInSync") + $homeArguments))
-
-    $retiredPaths = @(
-        (Join-Path (Join-Path $codexHome "skills") "proper-flowcharts"),
-        (Join-Path (Join-Path $codexHome "skills") "benchmark-run-operator"),
-        (Join-Path (Join-Path $codexHome "skills") "input-token-economy"),
-        (Join-Path (Join-Path $codexHome "skills") "using-codex-goals"),
-        (Join-Path (Join-Path $agentsHome "skills") "ui-ux-pro-max"),
-        (Join-Path (Join-Path $agentsHome "skills") "benchmark-run-operator"),
-        (Join-Path (Join-Path $agentsHome "skills") "input-token-economy"),
-        (Join-Path (Join-Path $agentsHome "skills") "using-codex-goals"),
-        (Join-Path (Join-Path $claudeHome "skills") "benchmark-run-operator"),
-        (Join-Path (Join-Path $claudeHome "skills") "input-token-economy"),
-        (Join-Path (Join-Path $claudeHome "skills") "using-codex-goals")
-    )
-    foreach ($retiredPath in $retiredPaths) {
-        New-Item -ItemType Directory -Force $retiredPath | Out-Null
-        Set-Content -LiteralPath (Join-Path $retiredPath "legacy.txt") -Value "legacy"
-    }
-    $retiredClaudeAgent = Join-Path (Join-Path $claudeHome "agents") "benchmark-infra-reviewer.md"
-    New-Item -ItemType Directory -Force (Split-Path -Parent $retiredClaudeAgent) | Out-Null
-    Set-Content -LiteralPath $retiredClaudeAgent -Value "legacy"
-
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-Apply") + $homeArguments))
-    foreach ($retiredPath in $retiredPaths) {
-        if (Test-Path -LiteralPath $retiredPath) {
-            throw "retired skill was not removed: $retiredPath"
+        if (-not $blankConfig.Contains($preserved)) {
+            throw "blank config lost unrelated content: $preserved"
         }
     }
-    if (Test-Path -LiteralPath $retiredClaudeAgent) {
-        throw "retired Claude agent was not removed: $retiredClaudeAgent"
+    foreach ($removed in @(
+        'model = "gpt-5.6-sol"',
+        'max_depth = 2',
+        'tool_namespace = "agents"'
+    )) {
+        if ($blankConfig.Contains($removed)) {
+            throw "blank config retained reviewed value: $removed"
+        }
     }
-    [void](Invoke-TestScript -Path $verifyPath -Arguments (@("-SkipCodexCommand", "-SkipPluginCheck", "-RequireInSync") + $homeArguments))
 
-    Write-Host "install round trip: ok"
-}
-catch {
-    $diagnosticPath = Join-Path $repoRoot "compass-roundtrip-error.txt"
-    $diagnostic = @(
-        $_ | Format-List * -Force | Out-String
-        "script stack:"
-        $_.ScriptStackTrace
-    ) -join "`n"
-    [System.IO.File]::WriteAllText($diagnosticPath, $diagnostic)
-    throw
+    foreach ($root in @($codexHome, $agentsHome, $claudeHome)) {
+        Assert-PathPresent -Path (Join-Path $root "portable-backups")
+    }
+    $currentReceiptPath = Join-Path $codexHome "portable-receipts\current.json"
+    Assert-PathPresent -Path $currentReceiptPath
+    $blankReceipt = Get-Content -Raw -LiteralPath $currentReceiptPath | ConvertFrom-Json
+    if (@($blankReceipt.changes | Where-Object { $_.operation -eq "retire" }).Count -eq 0) {
+        throw "blank receipt recorded no retirement changes"
+    }
+    if (@($blankReceipt.changes | Where-Object { $_.target -eq $configPath }).Count -ne 1) {
+        throw "blank receipt did not record config retirement"
+    }
+
+    $receiptCountBefore = @(Get-ChildItem -LiteralPath (Join-Path $codexHome "portable-receipts") -Filter "install-*.json" -File).Count
+    $secondApply = @(Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $homeArguments))
+    if ($secondApply -notcontains "backups: none") {
+        throw "second blank apply created backups"
+    }
+    if ($secondApply -notcontains "receipt: unchanged") {
+        throw "second blank apply rewrote receipt"
+    }
+    $receiptCountAfter = @(Get-ChildItem -LiteralPath (Join-Path $codexHome "portable-receipts") -Filter "install-*.json" -File).Count
+    if ($receiptCountAfter -ne $receiptCountBefore) {
+        throw "second blank apply created a receipt"
+    }
+
+    $oldConfigOutput = @(& $runner.Command @($runner.Prefix) $oldConfigTool --reviewed-config $oldReviewFile --live-config $configPath)
+    if ($LASTEXITCODE -ne 0) {
+        throw "old-source config restoration failed"
+    }
+    $oldConfigState = ($oldConfigOutput -join "`n") | ConvertFrom-Json
+    Write-Utf8Text -Path $configPath -Text ([string]$oldConfigState.merged_text)
+
+    [void](Invoke-TestScript -Path $oldInstall -Arguments (@(
+        "-Apply",
+        "-SourceRef", "base-fixture-$baseCommit"
+    ) + $homeArguments))
+    [void](Invoke-TestScript -Path $oldVerify -Arguments (@(
+        "-SkipCodexCommand",
+        "-SkipPluginCheck",
+        "-RequireInSync"
+    ) + $homeArguments))
+    Assert-PathPresent -Path (Join-Path $codexHome "AGENTS.md")
+    Assert-PathPresent -Path (Join-Path $agentsHome "skills\compass\SKILL.md")
+    Assert-PathPresent -Path (Join-Path $claudeHome "CLAUDE.md")
+    Assert-PathPresent -Path (Join-Path $claudeHome "agents\reviewer.md")
+    foreach ($sentinel in $sentinels) {
+        if ((Get-FileHash -Algorithm SHA256 -LiteralPath $sentinel).Hash -ne $sentinelHashes[$sentinel]) {
+            throw "old-source restoration changed unrelated sentinel: $sentinel"
+        }
+    }
+
+    Write-Host "blank install round trip: ok"
 }
 finally {
     if (Test-Path -LiteralPath $testRoot) {

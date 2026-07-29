@@ -10,7 +10,7 @@
 
 $generatorsDir = Join-Path $repoRoot "scripts\generators"
 if (Test-Path -LiteralPath $generatorsDir -PathType Container) {
-    $runner = Get-DoctorPythonRunner
+    $runner = @(Get-DoctorPythonRunner)
     if ($runner.Count -eq 0) {
         $problems.Add("python runner unavailable for generated-artifacts check")
     }

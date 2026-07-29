@@ -17,10 +17,11 @@ from repo to live install targets a deliberate copy step with a diff.
 
 ## Exact Capability Contracts
 
-Compass owns the portable bundle and its reviewed config fragments. When a
-skill, agent, hook, or script depends on another Compass-owned capability, make
-that dependency exact. Fix the source, install map, config fragment, live
-verification, or reviewer contract until the capability is present and checked.
+Compass owns an intentionally blank portable bundle and an exact retirement
+contract. Keep empty manifest collections valid and exact. A proposal to add a
+global skill, agent, hook, file, or config entry must reopen the relevant
+collection and update install, verification, retirement, and rollback evidence
+together.
 
 Do not write installed guidance that offers alternate paths for a capability
 Compass can provide. Alternate-path prose teaches future agents to route around
@@ -31,9 +32,9 @@ reported as unavailable.
 
 ## Install Boundary
 
-Installed agentic documentation changes future Codex behavior. It belongs in
-`codex/AGENTS.md`, `codex/agents/`, or `codex/skills/`, and should describe
-durable role, stance, judgment, and capability boundaries.
+Installed agentic documentation changes future runtime behavior. The current
+global route contains none. Project guidance stays in its project, and optional
+portable packs stay under `carried/`.
 
 Installed docs should speak to the agent that will use them at runtime. State
 the contract directly. Do not put provenance, dated observations, platform
@@ -54,16 +55,12 @@ agent behavior.
 
 ## Context Discipline
 
-- Keep `codex/AGENTS.md` short. It should hold personal defaults that genuinely
-  apply everywhere.
-- Treat `codex/AGENTS.md` as the portable copy of the live global
-  `~/.codex/AGENTS.md`, not as repo-local maintenance notes.
-- If a rule only makes sense while editing Compass, it belongs in the
-  repo-root `AGENTS.md`, `workflows/`, or `local-docs/`, not in
-  `codex/AGENTS.md`.
-- Put detailed guidance in the narrowest surface: installed skill references for
-  reusable agent capability, workflows or local docs for repo maintenance,
-  scripts for mechanical checks, and manifests for boundaries.
+- Keep the active global collections in `manifests/portable-files.toml` empty
+  until a focused review explicitly changes that authority.
+- If a rule only makes sense while editing Compass, it belongs in the repo-root
+  `AGENTS.md`, `workflows/`, or `local-docs/`.
+- Put detailed guidance in the narrowest project, carried pack, workflow, local
+  doc, script, or manifest surface.
 - Add durable guidance only after repeated mistakes or clear workflow friction.
 - Prefer evidence over preference. A new rule should name the failure it
   prevents or the review path it improves.

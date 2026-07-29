@@ -86,8 +86,15 @@ function Get-DoctorPythonRunner {
             $runnerArgs = @($candidate[1..($candidate.Count - 1)])
         }
 
-        & $exe @runnerArgs "--version" *> $null
-        if ($LASTEXITCODE -eq 0) {
+        $runnerWorks = $false
+        try {
+            & $exe @runnerArgs "--version" *> $null
+            $runnerWorks = $LASTEXITCODE -eq 0
+        }
+        catch {
+            $runnerWorks = $false
+        }
+        if ($runnerWorks) {
             return @($candidate)
         }
     }

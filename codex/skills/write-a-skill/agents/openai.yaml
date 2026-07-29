@@ -1,7 +1,0 @@
-interface:
-  display_name: "Write A Skill"
-  short_description: "Design and evaluate focused agent skills"
-  default_prompt: "Use $write-a-skill to create, evaluate, revise, or retire a reusable skill. Define trigger, near-neighbor, and behavior cases before writing, then keep only guidance that improves observed behavior."
-
-policy:
-  allow_implicit_invocation: false

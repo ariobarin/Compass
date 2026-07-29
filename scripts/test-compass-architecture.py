@@ -32,51 +32,46 @@ class CompassArchitectureTests(unittest.TestCase):
         with (ROOT / "manifests" / "portable-files.toml").open("rb") as handle:
             return tomllib.load(handle)
 
-    def test_installed_skill_set_matches_current_architecture(self) -> None:
+    def test_active_portable_bundle_is_exactly_blank(self) -> None:
         manifest = self.manifest()
-        skills = set(manifest["agents"]["skills"])
-        self.assertIn("compass", skills)
-        self.assertIn("run-a-micro-experiment", skills)
-        self.assertIn("using-goals", skills)
-        self.assertIn("which-llm", skills)
-        self.assertIn("write-a-skill", skills)
-        self.assertNotIn("update-compass", skills)
-        self.assertNotIn("write-a-compass-skill", skills)
-        self.assertNotIn("benchmark-run-operator", skills)
-        self.assertNotIn("input-token-economy", skills)
-        self.assertNotIn("using-codex-goals", skills)
-
-        for skill in skills:
-            self.assertTrue((ROOT / "codex" / "skills" / skill / "SKILL.md").is_file(), skill)
+        for section, key in (
+            ("codex", "files"),
+            ("codex", "dirs"),
+            ("agents", "skills"),
+            ("agents", "stateful_skills"),
+            ("claude", "files"),
+            ("claude", "derived_skills"),
+            ("claude", "agents"),
+            ("claude", "derived_agents"),
+            ("config", "review_files"),
+        ):
+            self.assertEqual(manifest[section][key], [], f"{section}.{key}")
 
         carried = ROOT / "carried" / "benchmark" / "skills" / "benchmark-run-operator" / "SKILL.md"
         self.assertTrue(carried.is_file())
+        self.assertTrue(
+            (ROOT / "external-sources" / "design-taste-frontend" / "SKILL.md").is_file()
+        )
+        self.assertTrue(
+            (ROOT / "external-sources" / "which-llm" / "SKILL.md").is_file()
+        )
 
-    def test_runtime_globals_are_separate_and_truthful(self) -> None:
-        manifest = self.manifest()
-        self.assertEqual(manifest["claude"]["files"], ["CLAUDE.md"])
+    def test_manifest_boundary_reads_review_files_array(self) -> None:
+        boundary = self.read("scripts/doctor/checks/manifest-boundaries.ps1")
+        self.assertIn(
+            'Section "config" -Key "review_files"',
+            boundary,
+        )
+        self.assertNotIn('-Key "review_file"', boundary)
 
-        codex = self.read("codex/AGENTS.md")
-        claude = self.read("claude/CLAUDE.md")
+    def test_runtime_globals_are_absent_and_app_profile_stays_separate(self) -> None:
+        self.assertEqual(list((ROOT / "codex").rglob("*.*")), [])
+        self.assertEqual(list((ROOT / "claude").rglob("*.*")), [])
         mcp = self.read("apps/compass-mcp/profile.md")
-
-        self.assertIn("GPT-5.6 Sol", codex)
-        self.assertIn("GPT-5.6 Luna", codex)
-        self.assertNotIn("GPT-5.6 Terra", codex)
-        self.assertNotIn("GLM-5.2", codex)
-
-        self.assertIn("GLM-5.2", claude)
-        self.assertNotIn("GPT-5.6 Sol", claude)
-        self.assertNotIn("GPT-5.6 Luna", claude)
-
         self.assertNotRegex(mcp, r"GPT-5\.6 (?:Sol|Luna|Terra)|GLM-5\.2")
 
-    def test_model_tier_defaults_are_documented_and_applied(self) -> None:
-        with (ROOT / "codex" / "config.review.toml").open("rb") as handle:
-            config = tomllib.load(handle)
-        model = config["model"]
-        self.assertEqual(config["model_reasoning_effort"], MODEL_EFFORT_DEFAULTS[model])
-
+    def test_model_tiers_are_documented_but_not_globally_applied(self) -> None:
+        self.assertEqual(self.manifest()["config"]["review_files"], [])
         calibration = self.read("local-docs/model-calibration.md")
         for tier in MODEL_TIERS:
             self.assertIn(f"| {tier['display_name']} | `{tier['effort']}` |", calibration)
@@ -161,21 +156,13 @@ class CompassArchitectureTests(unittest.TestCase):
                     validate_ledger(legacy)
 
     def test_codex_agents_follow_luna_first_profile(self) -> None:
-        for path in sorted((ROOT / "codex" / "agents").glob("*.toml")):
-            with path.open("rb") as handle:
-                agent = tomllib.load(handle)
-            self.assertEqual(agent.get("model"), "gpt-5.6-luna", path.name)
-            self.assertNotIn("service_tier", agent, path.name)
-            effort = agent.get("model_reasoning_effort")
-            self.assertIn(effort, {"high", "xhigh", "max"}, path.name)
+        self.assertEqual(self.manifest()["claude"]["derived_agents"], [])
+        self.assertEqual(list((ROOT / "codex" / "agents").glob("*.toml")), [])
 
     def test_principal_authorship_is_consistent(self) -> None:
         for relative in (
             "philosophy.md",
             "workflows/long-running-work.md",
-            "codex/skills/using-goals/SKILL.md",
-            "codex/skills/orchestration-controller/SKILL.md",
-            "codex/skills/subagent-driven-development/SKILL.md",
             "workflows/orchestration-ledger.md",
         ):
             text = self.read(relative)
@@ -191,31 +178,23 @@ class CompassArchitectureTests(unittest.TestCase):
         for name in ("goal", "plan", "catalog", "assignment", "decision", "checkpoint"):
             self.assertTrue((ROOT / "workflows" / "templates" / f"{name}.md").is_file(), name)
 
-    def test_workspace_template_has_distinct_lifecycles_and_templates(self) -> None:
-        base = ROOT / "codex" / "skills" / "workspace-steward" / "references" / "project-template"
-        required = (
+    def test_project_templates_are_not_global_sources(self) -> None:
+        self.assertEqual(
+            list((ROOT / "codex" / "skills" / "workspace-steward").rglob("*.*")),
+            [],
+        )
+        project_template = ROOT / "project-templates" / "workspace"
+        for relative in (
             "README.md",
             "AGENTS.md",
             "CLAUDE.md",
-            "glossary.md",
-            "experiments/README.md",
             "experiments/TEMPLATE.md",
-            "worktrees/README.md",
-            "worktrees/prs/README.md",
-            "worktrees/spikes/README.md",
-            "local-docs/README.md",
             "local-docs/goals/TEMPLATE.md",
-            "local-docs/plans/TEMPLATE.md",
-            "local-docs/catalogs/TEMPLATE.md",
-            "local-docs/assignments/TEMPLATE.md",
-            "local-docs/checkpoints/TEMPLATE.md",
-            "local-docs/decisions/TEMPLATE.md",
-        )
-        for relative in required:
-            self.assertTrue((base / relative).is_file(), relative)
-
-        experiment = (base / "experiments" / "README.md").read_text(encoding="utf-8")
-        self.assertIn("Experimental code does not graduate. The finding graduates.", experiment)
+            "worktrees/prs/README.md",
+        ):
+            self.assertTrue((project_template / relative).is_file(), relative)
+        for name in ("goal", "plan", "catalog", "assignment", "decision", "checkpoint"):
+            self.assertTrue((ROOT / "workflows" / "templates" / f"{name}.md").is_file())
 
     def test_skill_descriptions_are_routable_and_bounded(self) -> None:
         skill_files = list((ROOT / "codex" / "skills").glob("*/SKILL.md"))
@@ -254,41 +233,33 @@ class CompassArchitectureTests(unittest.TestCase):
             self.assertNotIn("$update-compass", text, path)
             self.assertNotIn("$write-a-compass-skill", text, path)
 
-    def test_retired_skill_manifest_is_well_formed(self) -> None:
-        # The manifest is the single source. Name format is owned by
-        # scripts/doctor/checks/retired-skills.ps1, so this test does not mirror
-        # that regex. It guards schema shape and the historically replaced
-        # global surfaces that must stay retired.
-        manifest = json.loads(self.read("manifests/retired-skills.json"))
+    def test_portable_retirement_manifest_is_well_formed(self) -> None:
+        manifest = json.loads(self.read("manifests/portable-retirements.json"))
         self.assertEqual(manifest["schema_version"], 1)
-        list_keys = (
-            "codex_home_skills",
-            "user_skills_home",
-            "claude_skills",
-            "claude_agents",
+        self.assertEqual(
+            manifest["base_commit"],
+            "349b94acad6175561e56304704856c5632db6b6c",
         )
-        all_names: set[str] = set()
-        for key in list_keys:
-            entries = manifest[key]
-            self.assertIsInstance(entries, list)
-            self.assertEqual(
-                len(entries),
-                len(set(entries)),
-                f"duplicate retired name in {key}",
-            )
-            all_names.update(entries)
+        identities = {
+            (entry["scope"], entry["path"]) for entry in manifest["items"]
+        }
+        self.assertEqual(len(identities), len(manifest["items"]))
         for required in (
-            "benchmark-run-operator",
-            "input-token-economy",
-            "using-codex-goals",
-            "benchmark-infra-reviewer.md",
-            "update-compass",
-            "write-a-compass-skill",
+            ("codex", "AGENTS.md"),
+            ("codex", "hooks.json"),
+            ("codex", "keybindings.json"),
+            ("codex", "agents"),
+            ("codex", "hooks"),
+            ("agents", "skills/compass"),
+            ("agents", "skills/which-llm"),
+            ("claude", "CLAUDE.md"),
+            ("claude", "skills/compass"),
+            ("claude", "agents/reviewer.md"),
         ):
-            self.assertIn(required, all_names)
-        self.assertIn("update-compass", manifest["user_skills_home"])
-        self.assertIn("write-a-compass-skill", manifest["user_skills_home"])
-        self.assertIn("write-a-compass-skill", manifest["claude_skills"])
+            self.assertIn(required, identities)
+        config_paths = [entry["path"] for entry in manifest["config_entries"]]
+        self.assertEqual(len(config_paths), 16)
+        self.assertEqual(len(config_paths), len(set(config_paths)))
 
     def test_skill_description_cap_matches_shared_constant(self) -> None:
         common = self.read("scripts/common.ps1")

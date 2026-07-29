@@ -4,7 +4,6 @@
     "agents.ps1",
     "claude.ps1",
     "generated-artifacts.ps1",
-    "hooks.ps1",
     "ledger-schema-prose.ps1",
     "manifest-boundaries.ps1",
     "model-tiers.ps1",
@@ -13,11 +12,10 @@
     "required-files.ps1",
     "restart-recovery.ps1",
     "retired-plugins.ps1",
-    "retired-skills.ps1",
+    "portable-retirements.ps1",
     "skill-sources.ps1",
     "skills.ps1",
     "source-of-truth.ps1",
-    "template-anchors.ps1",
     "text-policy.ps1"
   ]
 }

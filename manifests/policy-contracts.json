@@ -10,25 +10,11 @@
       ]
     },
     {
-      "id": "separate-runtime-global-sources",
-      "path": "AGENTS.md",
+      "id": "portable-global-route-is-blank",
+      "path": "README.md",
       "required": [
-        "Maintain those two files separately. Share values, not runtime fiction.",
-        "Delegates execute reviewed assignments and return artifacts plus evidence. Do not distribute control authorship across worker-written ledgers."
-      ]
-    },
-    {
-      "id": "shared-preference-prose-codex",
-      "path": "codex/AGENTS.md",
-      "required": [
-        "## Writing\n\n- Never use em dashes or en dashes in commits, code comments, prose, or chat.\n  Use other punctuation or separate sentences.\n\n## Git And Pull Requests\n\n- Commit with one lowercase subject, about 8 words or fewer, with no trailing\n  punctuation, body, or `Co-Authored-By` trailer. Describe changes neutrally.\n- Prefer a pull request as the unit for repository changes. Use a descriptive,\n  often verb-led title without conventional-commit prefixes. Keep the body to\n  0-2 motivation-first sentences with no headers, checkboxes, emojis, or\n  generated footer."
-      ]
-    },
-    {
-      "id": "shared-preference-prose-claude",
-      "path": "claude/CLAUDE.md",
-      "required": [
-        "## Writing\n\n- Never use em dashes or en dashes in commits, code comments, prose, or chat.\n  Use other punctuation or separate sentences.\n\n## Git And Pull Requests\n\n- Commit with one lowercase subject, about 8 words or fewer, with no trailing\n  punctuation, body, or `Co-Authored-By` trailer. Describe changes neutrally.\n- Prefer a pull request as the unit for repository changes. Use a descriptive,\n  often verb-led title without conventional-commit prefixes. Keep the body to\n  0-2 motivation-first sentences with no headers, checkboxes, emojis, or\n  generated footer."
+        "Its Codex files and directories, user skills, Claude files, skills and agents, and reviewed config collections are currently empty.",
+        "Retired config entries are removed only when their current values match the recorded prior reviewed values."
       ]
     },
     {
@@ -36,76 +22,6 @@
       "path": "apps/compass-mcp/profile.md",
       "required": [
         "## Writing\n\n- Never use em dashes or en dashes in commits, code comments, prose, or chat.\n  Use other punctuation or separate sentences.\n\n## Git And Pull Requests\n\n- Commit with one lowercase subject, about 8 words or fewer, with no trailing\n  punctuation, body, or `Co-Authored-By` trailer. Describe changes neutrally.\n- Prefer a pull request as the unit for repository changes. Use a descriptive,\n  often verb-led title without conventional-commit prefixes. Keep the body to\n  0-2 motivation-first sentences with no headers, checkboxes, emojis, or\n  generated footer."
-      ]
-    },
-    {
-      "id": "shared-runtime-prose-codex",
-      "path": "codex/AGENTS.md",
-      "exact_sections": {
-        "Long-Running Continuity": "- Treat compaction and principal replacement as lossy handoffs. Preserve the objective in principal-authored goals, plans, catalogs, ledgers, assignments, and checkpoints before context pressure forces recovery.\n- Delegates own assigned artifacts and return evidence through the named return channel. The user-facing principal reviews assignments and remains the logical author of control state.\n- A fresh context must be able to reopen the anchors, verify current state, and resume without private conversation history.\n- A work catalog may record a blocker immediately. Mark the active Codex goal blocked only when the same blocking condition has repeated for at least three consecutive goal turns and no meaningful progress remains without user input or an external state change. Count the original or user-triggered turn and any automatic continuations. After a blocked goal resumes, start a fresh blocked audit and require three consecutive resumed goal turns before blocking it again. Once those conditions hold, mark the goal blocked instead of leaving it active while repeatedly reporting the blocker.",
-        "Planning Authority": "- A planning-only request authorizes inspection, research, questions, plans, and explicitly scoped experiments. Production implementation begins when the user or named authority opens that phase.\n- Review material goals, plans, delegation boundaries, and irreversible actions before launch unless the user already granted or waived that review.",
-        "Repository And State Boundaries": "- In a worktree, read and edit only that worktree. Keep one scope per branch or pull request, and preserve unrelated user work.\n- Prefer the smallest coherent change that fixes the owning boundary. After a repair, review for removable guards, wrappers, duplicate state, and obsolete paths.",
-        "Windows": "- Container entrypoint `.sh` files use LF line endings. When startup reports `No such file or directory`, inspect line endings before assuming a missing path."
-      }
-    },
-    {
-      "id": "shared-runtime-prose-claude",
-      "path": "claude/CLAUDE.md",
-      "exact_sections": {
-        "Long-Running Continuity": "- Treat compaction and principal replacement as lossy handoffs. Preserve the objective in principal-authored goals, plans, catalogs, ledgers, assignments, and checkpoints before context pressure forces recovery.\n- Delegates own assigned artifacts and return evidence through the named return channel. The user-facing principal reviews assignments and remains the logical author of control state.\n- A fresh context must be able to reopen the anchors, verify current state, and resume without private conversation history.",
-        "Planning Authority": "- A planning-only request authorizes inspection, research, questions, plans, and explicitly scoped experiments. Production implementation begins when the user or named authority opens that phase.\n- Review material goals, plans, delegation boundaries, and irreversible actions before launch unless the user already granted or waived that review.",
-        "Repository And State Boundaries": "- In a worktree, read and edit only that worktree. Keep one scope per branch or pull request, and preserve unrelated user work.\n- Prefer the smallest coherent change that fixes the owning boundary. After a repair, review for removable guards, wrappers, duplicate state, and obsolete paths.",
-        "Windows": "- Container entrypoint `.sh` files use LF line endings. When startup reports `No such file or directory`, inspect line endings before assuming a missing path."
-      }
-    },
-    {
-      "id": "compass-single-entrypoint",
-      "path": "codex/skills/compass/SKILL.md",
-      "required": [
-        "Turn the user's learning or requested change into the smallest coherent Compass",
-        "current repository guidance, workflows, manifests, scripts, and tests as",
-        "Do not restate or cache their rules here.",
-        "use `write-a-skill`",
-        "reviewed update workflow and script instead of changing source."
-      ]
-    },
-    {
-      "id": "codex-luna-first-delegation",
-      "path": "codex/AGENTS.md",
-      "required": [
-        "The root session uses GPT-5.6 Sol.",
-        "Fresh delegated work uses GPT-5.6 Luna by default.",
-        "A Sol child needs a concrete capability reason."
-      ],
-      "forbidden": [
-        "GPT-5.6 Terra"
-      ]
-    },
-    {
-      "id": "claude-glm-only-routing",
-      "path": "claude/CLAUDE.md",
-      "required": [
-        "Treat GLM-5.2 as the only available child model identity.",
-        "Prefer a fresh narrow subagent for a bounded assignment."
-      ]
-    },
-    {
-      "id": "codex-cli-first-external-tools",
-      "path": "codex/AGENTS.md",
-      "required": [
-        "Prefer a locally authenticated CLI over a connector when both cover the task.",
-        "Keep redundant connector plugins disabled or uninstalled so they do not distract tool selection.",
-        "Before requesting consent or changing a live external tenant, explain the effective authorization grant and why it is needed.",
-        "Decline broad management consent when a narrower route exists.",
-        "Verify the effective grant rather than trusting requested scope labels alone."
-      ]
-    },
-    {
-      "id": "claude-cli-first-external-tools",
-      "path": "claude/CLAUDE.md",
-      "required": [
-        "Prefer a locally authenticated CLI over a connector when both cover the task.",
-        "Keep redundant connector plugins disabled or uninstalled so they do not distract tool selection."
       ]
     },
     {
@@ -118,50 +34,6 @@
       "forbidden": [
         "GPT-5.6 Sol",
         "GLM-5.2"
-      ]
-    },
-    {
-      "id": "pr-current-head-and-authority",
-      "path": "codex/skills/pr-review-loop/SKILL.md",
-      "required": [
-        "All readiness conclusions target one exact head SHA.",
-        "Merge only when explicitly authorized and every required current-head gate is satisfied."
-      ]
-    },
-    {
-      "id": "behavior-validator-source-blind",
-      "path": "codex/agents/behavior-validator.toml",
-      "required": [
-        "Implementation shape, test names, static success text, reviewer claims, and the desired conclusion carry no evidentiary weight.",
-        "Exposure to source, diffs, tests, history, implementation notes, or review bundles contaminates the run."
-      ]
-    },
-    {
-      "id": "controller-preserves-principal-authorship",
-      "path": "codex/skills/orchestration-controller/SKILL.md",
-      "required": [
-        "The controller is the user-facing logical principal. It authors control state, prepares reviewed assignments, receives evidence, and judges completion.",
-        "Delegates own assigned artifacts and investigations. They return evidence through the named return channel.",
-        "Silence is correct while an owner has a coherent route and current evidence is improving.",
-        "An explicit user hold, cancellation, or authority revocation ends ordinary continuation for the affected delegates.",
-        "Cancellation is neither worker failure nor parent completion."
-      ]
-    },
-    {
-      "id": "orchestration-controller-cancellation-transition",
-      "path": "codex/skills/orchestration-controller/references/controller-principles.md",
-      "required": [
-        "use its cancelled transition to clear worker ownership, pending action and check state, active recovery ownership, and public mutation authority",
-        "Require the stopped delegate to return `held` or `cancelled`"
-      ]
-    },
-    {
-      "id": "subagent-cancellation-return",
-      "path": "codex/skills/subagent-driven-development/implementer-prompt.md",
-      "required": [
-        "Result: completed | needs decision | waiting external | failed | held | cancelled",
-        "Preserved artifact and evidence locators:",
-        "Process or delegate state still requiring verification:"
       ]
     },
     {
@@ -184,49 +56,6 @@
       "forbidden": [
         "set-grant",
         "claim-successor"
-      ]
-    },
-    {
-      "id": "goal-stability-and-resume",
-      "path": "codex/skills/using-goals/SKILL.md",
-      "required": [
-        "The goal remains stable until its named authority records an amendment.",
-        "A successor principal reopens authoritative anchors in order and verifies changeable state before continuing.",
-        "Production mutation begins when the named authority opens that phase.",
-        "keep that field to the smallest complete statement of finished state, constraints, authority, and anchor locators"
-      ]
-    },
-    {
-      "id": "codex-goal-blocked-transition",
-      "path": "codex/AGENTS.md",
-      "required": [
-        "Mark the active Codex goal blocked only when the same blocking condition has repeated for at least three consecutive goal turns and no meaningful progress remains without user input or an external state change.",
-        "Count the original or user-triggered turn and any automatic continuations.",
-        "After a blocked goal resumes, start a fresh blocked audit and require three consecutive resumed goal turns before blocking it again.",
-        "Once those conditions hold, mark the goal blocked instead of leaving it active while repeatedly reporting the blocker."
-      ]
-    },
-    {
-      "id": "monitor-keeps-clock-outside-context",
-      "path": "codex/skills/monitor-to-completion/SKILL.md",
-      "required": [
-        "One blocking command owns the wait.",
-        "A successful wait is evidence for the parent objective. The parent decides what that evidence means."
-      ]
-    },
-    {
-      "id": "root-cause-subtractive-repair",
-      "path": "codex/skills/root-cause-not-symptom/SKILL.md",
-      "required": [
-        "A recurring symptom is new evidence. Reopen the causal model before adding another layer.",
-        "Line reduction is useful evidence, not the target. The target is a system with a simpler truthful explanation."
-      ]
-    },
-    {
-      "id": "micro-experiment-code-does-not-graduate",
-      "path": "codex/skills/run-a-micro-experiment/SKILL.md",
-      "required": [
-        "Experimental code does not graduate into production. The finding graduates."
       ]
     },
     {
@@ -253,13 +82,6 @@
         "Use the intended task population for headline arm success and coverage.",
         "Use the paired-valid intersection for paired deltas and the shared-success intersection for shared-success efficiency.",
         "Preserve incompatible historical rows and their artifacts, but exclude them from current report cells"
-      ]
-    },
-    {
-      "id": "hook-failure-boundary",
-      "path": "codex/hooks/README.md",
-      "required": [
-        "The launchers fail open if the guard script or Python runner is missing. The portable repo checks catch that state before hook definitions are treated as accepted."
       ]
     }
   ]

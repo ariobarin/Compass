@@ -31,6 +31,7 @@ and maintainer rationale when those facts change future decisions. Keep secrets,
 machine-only runtime state, raw private logs, and action-critical global rules
 out of this directory.
 
-When a lesson should change future runtime behavior, compress the current rule
-into the narrowest `AGENTS.md`, `CLAUDE.md`, skill, agent, hook, script, or
-manifest. Leave the history here.
+When a lesson suggests future global runtime behavior, prepare the narrowest
+decision and evidence for explicit user approval. The active global route stays
+blank until a separate reviewed change updates its manifest, ownership,
+retirement, checks, tests, and guidance together. Leave the history here.

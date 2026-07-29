@@ -27,24 +27,25 @@ and live trust settings remain local.
 
 ## Choose The Narrowest Durable Surface
 
-Route the behavior to the reader that needs it:
+The current portable global route is intentionally blank. Route behavior to the
+reader that needs it:
 
-- session-wide Codex defaults: `codex/AGENTS.md`;
-- session-wide Claude defaults: `claude/CLAUDE.md`;
-- reusable runtime judgment: `codex/skills/`;
-- reusable reviewer, explorer, monitor, or worker persona: `codex/agents/`;
-- Claude-specific agent contract that cannot derive safely: `claude/agents/`;
 - project-specific capability: the target project repository;
+- reusable project starter material with no global install: `project-templates/`;
 - useful portable pack outside every global session: `carried/`;
+- reviewed third-party source with no active install: `external-sources/`;
 - Compass maintainer process: `workflows/`;
 - maintainer reasoning and dated evidence: `local-docs/`;
 - deterministic or fragile mechanics: `scripts/`;
 - install, portability, schema, and policy truth: `manifests/`;
-- stable reviewed Codex configuration: `codex/config.review.toml`.
+- a proposed global source: explicit user approval followed by a separate
+  focused reviewed change that reopens the relevant empty collection in
+  `manifests/portable-files.toml`.
 
-Codex and Claude share skills and many agents when the runtime contract is truly
-portable. Their global instruction files remain separately authored because the
-runtimes, models, and delegation surfaces differ.
+Do not recreate retired global files merely because their former path is
+familiar. A new global source must independently earn its recurring scope and
+must update retirement, ownership, install, verification, and rollback evidence
+as one review unit.
 
 ## Shape Runtime Guidance
 
@@ -64,9 +65,10 @@ Runtime files carry action. Maintainer history, model calibration, provenance,
 and packaging rationale belong in maintainer documentation or references that
 normal work does not load.
 
-## Prove The Addition Before Promotion
+## Prove The Addition Before Approval
 
-A durable addition follows this path:
+A global addition follows this path only after explicit user approval opens the
+separate reviewed change:
 
 1. Observe a repeated failure or distinct recurring need.
 2. Test the smallest candidate behavior in the lowest-risk appropriate surface.
@@ -88,7 +90,7 @@ A global skill or agent must remain useful across repositories and ordinary
 workflows. Project lore, benchmark families, and temporary experiments belong
 in the target repository or a carried pack.
 
-For an installed skill:
+For an explicitly approved proposed skill:
 
 - keep `SKILL.md` lean and put optional depth one level under `references/`;
 - put deterministic mechanics under `scripts/`;

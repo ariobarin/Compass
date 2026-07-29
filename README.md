@@ -1,6 +1,7 @@
 # Compass
 
-Reviewed source for a human-owned Codex and Claude Code setup.
+Reviewed maintenance source for a deliberately blank global Codex and Claude
+Code setup.
 
 Compass preserves capability while reducing the context, duplication, state,
 and maintenance overhead required to use agents well. Its central concern is
@@ -22,38 +23,33 @@ For public use, treat this repository as a worked example. Review
 
 ## Layout
 
-### Runtime instruction sources
+### Runtime state
 
-- `codex/AGENTS.md` is the separately authored global instruction source for
-  Codex, normally installed as `~/.codex/AGENTS.md`.
-- `claude/CLAUDE.md` is the separately authored global instruction source for
-  Claude Code, normally installed as `~/.claude/CLAUDE.md`.
-- `codex/agents/` contains reusable Codex agent roles. Most derive into Claude
-  agent files during installation. Platform-specific Claude agents live under
-  `claude/agents/` only when the shared transform cannot express their contract.
-- `codex/skills/` contains reviewed reusable skills installed into
-  `$HOME/.agents/skills`. Runtime-neutral skills listed in the manifest derive
-  into `$HOME/.claude/skills` from the same reviewed source.
-- `codex/hooks.json` and `codex/hooks/` contain reviewed Codex hooks. Hooks
-  require runtime trust review after installation.
-- `codex/keybindings.json` contains portable Codex keyboard bindings.
-- `codex/config.review.toml` is the reviewed scalar config fragment overlaid on
-  the live Codex config. Live keys absent from the fragment remain untouched.
+`manifests/portable-files.toml` is the authoritative active bundle. Its Codex
+files and directories, user skills, Claude files, skills and agents, and
+reviewed config collections are currently empty.
 
-Global Codex and Claude instruction files remain separate because their runtime,
-model, context, and delegation contracts differ. Shared skills and most shared
-agent roles derive when the behavior is genuinely runtime-neutral.
+`manifests/portable-retirements.json` records the exact former global targets
+and reviewed config values retired from base `349b94a`. Install removes a file
+or directory only when the current receipt owns its exact fingerprint, unless
+`-Adopt` explicitly authorizes a changed or foreign target. Retired config
+entries are removed only when their current values match the recorded prior
+reviewed values. Unrelated files, config keys, and comments remain untouched.
 
 ### Narrower and maintainer surfaces
 
 - `carried/` contains portable opt-in domain packs that do not belong in every
   session. The benchmark operations pack and WebMCP pack live here.
+- `external-sources/` preserves reviewed third-party source snapshots without
+  installing them globally.
 - `workflows/` contains recurring Compass maintenance procedures. Start with
   [workflows/README.md](workflows/README.md).
 - `local-docs/` contains reviewed maintenance reasoning and dated calibration
   that should not enter runtime context.
 - `manifests/` contains install boundaries, skill ownership, policy contracts,
   plugins, and mechanical schemas.
+- `project-templates/` contains repository-only starter material preserved from
+  retired global capabilities.
 - `scripts/` contains deterministic install, diff, validation, status,
   orchestration-ledger, and recovery mechanics.
 - `AGENTS.md` is repository-local guidance for maintaining Compass itself.
@@ -81,7 +77,7 @@ Preview the difference between reviewed source and live install targets:
 .\scripts\diff-live.ps1
 ```
 
-Check portability, manifests, policies, skills, agents, hooks, and text rules:
+Check portability, manifests, retirement policy, carried packs, and text rules:
 
 ```powershell
 .\scripts\doctor.ps1
@@ -105,7 +101,7 @@ Preview an installation:
 .\scripts\install.ps1
 ```
 
-Apply the reviewed installation and config overlay:
+Apply the reviewed blank transition:
 
 ```powershell
 .\scripts\install.ps1 -Apply

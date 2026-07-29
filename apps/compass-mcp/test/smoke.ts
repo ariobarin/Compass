@@ -40,19 +40,15 @@ try {
   await client.connect(transport);
   const instructions = client.getInstructions() ?? "";
   assert.match(instructions, /# User Preferences/);
-  assert.match(instructions, /- run-a-micro-experiment:/);
-  assert.match(instructions, /Select workflows from the reviewed skill catalog already included below/);
-  assert.match(instructions, /Load the selected workflow with get_skill/);
+  assert.match(instructions, /No reviewed Compass skills are active in this bundle/);
+  assert.doesNotMatch(instructions, /run-a-micro-experiment/);
 
   const tools = await client.listTools();
   assert.deepEqual(
     tools.tools.map(tool => tool.name).sort(),
     ["fetch", "get_profile", "get_skill", "list_skills", "search"]
   );
-  assert.match(
-    tools.tools.find(tool => tool.name === "list_skills")?.description ?? "",
-    /already included/
-  );
+  assert.match(tools.tools.find(tool => tool.name === "list_skills")?.description ?? "", /current reviewed skill catalog/);
 
   const profile = await client.callTool({ name: "get_profile", arguments: {} });
   assert.equal(profile.isError, undefined);
@@ -62,14 +58,15 @@ try {
 
   const skills = await client.callTool({ name: "list_skills", arguments: {} });
   assert.equal(skills.isError, undefined);
-  assert.match(JSON.stringify(skills), /run-a-micro-experiment/);
+  assert.match(JSON.stringify(skills), /"skills":\[\]/);
 
   const skill = await client.callTool({ name: "get_skill", arguments: { name: "run-a-micro-experiment" } });
-  assert.equal(skill.isError, undefined);
-  assert.match(JSON.stringify(skill), /Run A Micro-Experiment/);
+  assert.equal(skill.isError, true);
+  assert.match(JSON.stringify(skill), /Unknown Compass skill/);
 
-  const search = await client.callTool({ name: "search", arguments: { query: "micro experiment" } });
-  assert.match(JSON.stringify(search), /skill:run-a-micro-experiment/);
+  const search = await client.callTool({ name: "search", arguments: { query: "pull request" } });
+  assert.match(JSON.stringify(search), /"id":"profile"/);
+  assert.doesNotMatch(JSON.stringify(search), /skill:/);
 
   console.log("compass mcp smoke: ok");
 } finally {
