@@ -6,6 +6,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: portable-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   portable_matrix:
     name: portable (${{ matrix.os }})
@@ -21,6 +25,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -117,54 +123,33 @@ jobs:
             exit 1
           }
 
-  portable:
-    name: portable
-    needs: portable_matrix
-    if: always()
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Require portable matrix
-        shell: bash
-        run: test "${{ needs.portable_matrix.result }}" = "success"
-
-  install-roundtrip:
-    runs-on: windows-2025
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
       - name: Run install round trip
+        if: runner.os == 'Windows'
         shell: pwsh
         run: ./scripts/test-install-roundtrip.ps1
 
-  compass-mcp:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
       - name: Set up Node
+        if: runner.os == 'Linux'
         uses: actions/setup-node@v6
         with:
           node-version: 22
 
       - name: Install MCP dependencies
+        if: runner.os == 'Linux'
         working-directory: apps/compass-mcp
         run: npm install
 
       - name: Build MCP app
+        if: runner.os == 'Linux'
         working-directory: apps/compass-mcp
         run: npm run build
 
       - name: Smoke test MCP app
+        if: runner.os == 'Linux'
         working-directory: apps/compass-mcp
         run: npm run smoke
 
       - name: Smoke test MCP Worker
+        if: runner.os == 'Linux'
         working-directory: apps/compass-mcp
         run: npm run smoke:worker
