@@ -77,12 +77,11 @@ function Test-PortableReceiptOwnsTarget {
     if ($null -eq $Receipt) {
         return $false
     }
-    foreach ($artifact in @($Receipt.artifacts)) {
-        if ($artifact.target -and $artifact.target.Equals($Target, [System.StringComparison]::OrdinalIgnoreCase)) {
-            return $true
-        }
+    $artifact = Get-PortableReceiptArtifact -Receipt $Receipt -Target $Target
+    if ($null -eq $artifact -or [string]$artifact.state -ne "present") {
+        return $false
     }
-    return $false
+    return Test-PortableFingerprintMatches -Expected $artifact.fingerprint -Path $Target
 }
 
 function Get-PortableReceiptArtifact {

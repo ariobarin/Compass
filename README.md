@@ -1,52 +1,80 @@
 # Compass
 
-Compass is an intentionally blank global Codex and Claude Code bundle.
+Compass is reviewed source for portable Codex and Claude Code configuration.
+It keeps the mechanism for predefined global instructions, skills, agents, and
+configuration while leaving the active bundle empty until those definitions
+are intentionally rebuilt.
 
-The repository no longer carries agent frameworks, optional packs, frozen
-sources, project templates, hosted applications, or generic machine utilities.
-Git history preserves the former implementation without making it part of the
-current product.
+The repository is an allowlist, not a backup of runtime homes. Authentication,
+sessions, logs, caches, databases, browser state, generated plugin state, and
+machine-only values stay local.
 
-## Current State
+## Portable Sources
 
-Compass installs no global instructions, skills, agents, hooks, keybindings, or
-reviewed config. New global behavior must earn that scope in a separately
-reviewed change.
+`manifests/portable-files.toml` is the source-of-truth allowlist:
 
-## Temporary Reset
+- `codex.files` installs files from `codex/`, including `AGENTS.md`.
+- `codex.dirs` installs directories such as `codex/agents/`.
+- `agents.skills` installs `codex/skills/<name>/` into the user skill home.
+- `claude.files` installs files from `claude/`, including `CLAUDE.md`.
+- `claude.skills` and `claude.agents` install direct Claude definitions.
+- `claude.derived_skills` and `claude.derived_agents` reuse reviewed Codex
+  definitions when the formats can be derived safely.
+- `config.review_files` accepts at most one Codex TOML overlay. Reviewed keys
+  merge into live `config.toml` without replacing unrelated machine settings.
 
-`reset/v1/` safely retires files and config values installed by Compass before
-the blank reset. It is a migration boundary, not the foundation of a new
-framework.
+The arrays are currently empty. Adding a source file alone does not install it.
+The matching manifest entry is the explicit global-scope decision.
 
-Preview the reset:
+## Commands
 
-```powershell
-.\reset\v1\retire.ps1
-```
-
-Apply it:
-
-```powershell
-.\reset\v1\retire.ps1 -Apply
-```
-
-Verify that the former Compass targets are absent:
+Preview an installation:
 
 ```powershell
-.\reset\v1\verify.ps1 -RequireInSync
+.\scripts\install.ps1
 ```
 
-The reset preserves unrelated files, directories, config keys, comments, and
-changed targets unless `-Adopt` explicitly authorizes their retirement. Runtime
-state such as sessions, logs, caches, databases, browser state, and generated
-plugin state remains outside Compass.
-
-Run the focused checks with:
+Apply the reviewed bundle:
 
 ```powershell
-.\reset\v1\test-all.ps1
+.\scripts\install.ps1 -Apply
 ```
 
-After every relevant machine has completed and verified the reset, `reset/v1/`
-can be removed.
+Verify live targets:
+
+```powershell
+.\scripts\verify-live.ps1 -RequireInSync
+```
+
+Inspect exact file differences or refresh allowlisted source from live targets:
+
+```powershell
+.\scripts\diff-live.ps1
+.\scripts\snapshot.ps1
+.\scripts\snapshot.ps1 -Apply
+```
+
+Run the complete portable test suite:
+
+```powershell
+.\scripts\test-all.ps1
+```
+
+## Ownership And Removal
+
+Install previews by default. Applied changes are backed up and recorded in a
+receipt. Compass replaces or removes a live target only when the current
+receipt owns its exact fingerprint. A changed or foreign target is preserved
+unless `-Adopt` explicitly authorizes Compass to take ownership.
+
+`manifests/portable-retirements.json` and
+`manifests/retired-plugins.json` remain as migration inputs for the prior
+Compass reset. They do not prevent new reviewed definitions from being added,
+but a reintroduced target must also leave the retirement list.
+
+## Deliberately Excluded
+
+Compass no longer contains hosted applications, frozen third-party source
+copies, optional domain packs, project templates, orchestration ledgers,
+restart recovery, or generic agent-workflow documentation. Those are separate
+products or project concerns, not portable configuration infrastructure.

@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 function Get-RetiredPluginContract {
     param([string]$RepoRoot)
 
-    $path = Join-Path $PSScriptRoot "retired-plugins.json"
+    $path = Join-Path $RepoRoot "manifests\retired-plugins.json"
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "missing retired plugin manifest: $path"
     }

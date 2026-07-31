@@ -9,9 +9,21 @@ function Get-ReviewedConfigContract {
         [string]$CodexHome
     )
 
+    $manifest = (Get-PortableGeneratedData).manifest
+    $config = Get-PortableJsonProperty -Object $manifest -Name "config"
+    $reviewFiles = @(Get-PortableJsonProperty -Object $config -Name "review_files")
+    if ($reviewFiles.Count -gt 1) {
+        throw "portable manifest supports at most one active reviewed config file"
+    }
+
     return [pscustomobject]@{
-        ReviewPath = $null
-        RetirementPath = Join-Path $PSScriptRoot "portable-retirements.json"
+        ReviewPath = if ($reviewFiles.Count -eq 1) {
+            Join-Path (Join-Path $RepoRoot "codex") ([string]$reviewFiles[0])
+        }
+        else {
+            $null
+        }
+        RetirementPath = Join-Path $RepoRoot "manifests\portable-retirements.json"
         LivePath = Join-Path $CodexHome "config.toml"
     }
 }

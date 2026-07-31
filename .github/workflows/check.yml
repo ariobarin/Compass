@@ -7,7 +7,34 @@ on:
       - main
 
 jobs:
-  reset:
+  portable:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-2025
+          - ubuntu-latest
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Run portable tests
+        shell: pwsh
+        run: ./scripts/test-all.ps1
+
+      - name: Check diff formatting
+        shell: pwsh
+        run: git diff --check HEAD^
+
+  windows-powershell:
     runs-on: windows-2025
 
     steps:
@@ -19,10 +46,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run reset tests
-        shell: pwsh
-        run: ./reset/v1/test-all.ps1
-
-      - name: Check diff formatting
-        shell: pwsh
-        run: git diff --check HEAD^
+      - name: Run portable tests
+        shell: powershell
+        run: ./scripts/test-all.ps1

@@ -1,0 +1,123 @@
+# Reviewed files that Compass may install into global agent homes.
+
+[codex]
+# The live target is the active Codex home: $CODEX_HOME when set, otherwise
+# the default %USERPROFILE%\.codex path.
+home = "$CODEX_HOME or %USERPROFILE%\\.codex"
+
+files = [
+]
+
+dirs = [
+]
+
+[agents]
+# User skills install to the current user skill home, separate from the
+# Codex home used for AGENTS.md, keybindings, and custom agents.
+home = "$HOME\\.agents"
+skills_dir = "$HOME\\.agents\\skills"
+
+skills = [
+]
+
+# Stateful skills preserve runtime artifacts and Python caches inside their live
+# directory while Compass updates the reviewed source files.
+stateful_skills = [
+]
+
+[claude]
+# The live target is the active Claude home: $HOME/.claude. Claude skills
+# install to ~/.claude/skills and agents to ~/.claude/agents.
+home = "$HOME\\.claude"
+skills_dir = "$HOME\\.claude\\skills"
+agents_dir = "$HOME\\.claude\\agents"
+
+files = [
+]
+
+# Direct Claude skills are authored under claude/skills.
+skills = [
+]
+
+# Shared skills may instead derive from codex/skills at install time. Derivation
+# copies SKILL.md plus references/, scripts/, and assets/.
+derived_skills = [
+]
+
+# Direct Claude agents are authored under claude/agents as Markdown files.
+agents = []
+
+# Shared agents may instead derive from codex/agents/<name>.toml.
+derived_agents = [
+]
+
+[config]
+review_files = []
+reason = "Add at most one reviewed TOML overlay under codex. Machine-local and generated values remain untouched."
+
+[repo_only]
+# These paths are repository-root paths. Installed Codex and Claude surfaces are
+# mapped above. Carried packs are opt-in project resources and are not installed.
+files = [
+  ".gitattributes",
+  ".gitignore",
+  "AGENTS.md",
+  "CODE_OF_CONDUCT.md",
+  "CONTRIBUTING.md",
+  "LICENSE",
+  "README.md",
+  "SECURITY.md",
+  "SUPPORT.md",
+]
+
+dirs = [
+  ".github",
+  "manifests",
+  "scripts",
+]
+reason = "These paths maintain Compass itself and are never installed into an agent home."
+
+[local_only]
+files = [
+  "AGENTS.override.md",
+  "auth.json",
+  "history.jsonl",
+  "session_index.jsonl",
+  "installation_id",
+  "cap_sid",
+  "models_cache.json",
+  ".codex-global-state.json",
+]
+
+dirs = [
+  ".sandbox",
+  ".sandbox-bin",
+  ".sandbox-secrets",
+  ".tmp",
+  ".local",
+  "archived_sessions",
+  "automations",
+  "browser",
+  "cache",
+  "computer-use",
+  "log",
+  "memories",
+  "memories_extensions",
+  "node_repl",
+  "plugins",
+  "process_manager",
+  "rules",
+  "sessions",
+  "sqlite",
+  "threads",
+  "tmp",
+  "vendor_imports",
+  "worktrees",
+]
+
+patterns = [
+  "*.sqlite",
+  "*.sqlite-shm",
+  "*.sqlite-wal",
+  "*.log",
+]

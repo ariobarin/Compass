@@ -19,6 +19,72 @@ param(
     [System.IO.Path]::AltDirectorySeparatorChar
 ) | Select-Object -Unique
 
+function Test-FileMapsEqual {
+    param(
+        [hashtable]$Expected,
+        [hashtable]$Actual
+    )
+
+    if ($Expected.Count -ne $Actual.Count) {
+        return $false
+    }
+    foreach ($key in $Expected.Keys) {
+        if (-not $Actual.ContainsKey($key) -or $Expected[$key] -ne $Actual[$key]) {
+            return $false
+        }
+    }
+    return $true
+}
+
+function Test-PortableItemInSync {
+    param([object]$Item)
+
+    if (-not (Test-Path -LiteralPath $Item.RepoPath)) {
+        throw "missing portable source: $($Item.RepoPath)"
+    }
+    if (-not (Test-Path -LiteralPath $Item.LivePath)) {
+        return $false
+    }
+
+    if ($Item.Type -eq "file") {
+        if (-not (Test-Path -LiteralPath $Item.LivePath -PathType Leaf)) {
+            return $false
+        }
+        $repoHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Item.RepoPath).Hash
+        $liveHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Item.LivePath).Hash
+        return $repoHash -eq $liveHash
+    }
+
+    if ($Item.Type -eq "derived-agent") {
+        if (-not (Test-Path -LiteralPath $Item.LivePath -PathType Leaf)) {
+            return $false
+        }
+
+        $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) "compass-derived-install-$([guid]::NewGuid().ToString('N'))"
+        $tempFile = Join-Path $tempRoot "agent.md"
+        try {
+            New-Item -ItemType Directory -Force $tempRoot | Out-Null
+            Copy-PortableItem -Source $Item.RepoPath -Destination $tempFile -Type $Item.Type -AllowedRoot $tempRoot
+            $repoHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $tempFile).Hash
+            $liveHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Item.LivePath).Hash
+            return $repoHash -eq $liveHash
+        }
+        finally {
+            if (Test-Path -LiteralPath $tempRoot) {
+                Remove-Item -LiteralPath $tempRoot -Recurse -Force
+            }
+        }
+    }
+
+    if (-not (Test-Path -LiteralPath $Item.LivePath -PathType Container)) {
+        return $false
+    }
+
+    $expected = Get-PortableDirectoryFileMap -Root $Item.RepoPath -DerivedSkill:($Item.Type -eq "derived-skill") -Stateful:($Item.Type -eq "stateful-dir")
+    $actual = Get-PortableDirectoryFileMap -Root $Item.LivePath -Stateful:($Item.Type -eq "stateful-dir")
+    return Test-FileMapsEqual -Expected $expected -Actual $actual
+}
+
 function Get-ItemBackupPath {
     param(
         [object]$Item,
@@ -33,6 +99,15 @@ function Get-ItemBackupPath {
         $BackupRoot
     }
     return Join-Path $backupBase $relative
+}
+
+function Get-RepoRelativePath {
+    param([string]$Path)
+
+    $fullPath = [System.IO.Path]::GetFullPath($Path)
+    $fullRoot = [System.IO.Path]::GetFullPath($repoRoot).TrimEnd($pathSeparators)
+    Assert-PathUnderRoot -Path $fullPath -Root $fullRoot
+    return $fullPath.Substring($fullRoot.Length).TrimStart($pathSeparators).Replace("\", "/")
 }
 
 function Get-GitScalar {
@@ -61,13 +136,18 @@ function Test-ReceiptTargetSetEqual {
     param(
         [AllowNull()]
         [object]$Receipt,
+        [object[]]$ActiveItems,
         [object[]]$RetiredItems
     )
 
     if ($null -eq $Receipt) {
         return $false
     }
-    $expected = @($RetiredItems | ForEach-Object { $_.LivePath } | Sort-Object -Unique)
+    $expected = @(
+        @($ActiveItems | ForEach-Object { $_.LivePath }) +
+        @($RetiredItems | ForEach-Object { $_.LivePath }) |
+            Sort-Object -Unique
+    )
     $actual = @(@($Receipt.artifacts | ForEach-Object { $_.target }) | Sort-Object -Unique)
     return @(Compare-Object -ReferenceObject $expected -DifferenceObject $actual).Count -eq 0
 }
@@ -97,13 +177,29 @@ if (-not $resolvedSourceRef) {
 $liveHome = Get-CodexHome -CodexHome $CodexHome
 $agentsHome = Get-AgentsHome -AgentsHome $AgentsHome
 $claudeHome = Get-ClaudeHome -ClaudeHome $ClaudeHome
+$items = @(Get-PortableFileMap -RepoRoot $repoRoot -CodexHome $liveHome -AgentsHome $agentsHome -ClaudeHome $claudeHome)
 $retiredItems = @(Get-RetiredPortableFileMap -CodexHome $liveHome -AgentsHome $agentsHome -ClaudeHome $claudeHome)
+Assert-PortableTargetSetsDisjoint -ActiveItems $items -RetiredItems $retiredItems
 $currentReceipt = Get-PortableCurrentReceipt -CodexHome $liveHome
 $reviewedConfigContract = Get-ReviewedConfigContract -RepoRoot $repoRoot -CodexHome $liveHome
 $reviewConfigPath = $reviewedConfigContract.ReviewPath
 $liveConfigPath = $reviewedConfigContract.LivePath
 $reviewedConfigState = Get-ReviewedConfigState -ReviewPath $reviewConfigPath -RetirementPath $reviewedConfigContract.RetirementPath -LivePath $liveConfigPath
 
+$itemStates = @(
+    foreach ($item in $items) {
+        $exists = Test-Path -LiteralPath $item.LivePath
+        $inSync = Test-PortableItemInSync -Item $item
+        $owned = Test-PortableReceiptOwnsTarget -Receipt $currentReceipt -Target $item.LivePath
+        [pscustomobject]@{
+            Item = $item
+            Exists = $exists
+            InSync = $inSync
+            Owned = $owned
+            Foreign = ($exists -and -not $inSync -and -not $owned)
+        }
+    }
+)
 $retiredStates = @(
     foreach ($item in $retiredItems) {
         $exists = Test-Path -LiteralPath $item.LivePath
@@ -121,13 +217,20 @@ $retiredStates = @(
     }
 )
 
-$foreignStates = @($retiredStates | Where-Object { $_.Foreign })
+$foreignStates = @(
+    @($itemStates | Where-Object { $_.Foreign }) +
+    @($retiredStates | Where-Object { $_.Foreign })
+)
 $blockedForeignStates = @(
     if (-not $Adopt) {
         $foreignStates
     }
 )
 $blockedConfigStates = @($reviewedConfigState.blocked)
+$installStates = @($itemStates | Where-Object { -not $_.InSync -and ($Adopt -or -not $_.Foreign) })
+$missingStates = @($itemStates | Where-Object { -not $_.Exists })
+$changedStates = @($installStates | Where-Object { $_.Exists })
+$unchangedStates = @($itemStates | Where-Object { $_.InSync })
 $retiredRemovalStates = @($retiredStates | Where-Object { $_.Exists -and ($Adopt -or $_.Owned) })
 Write-Host "repo: $repoRoot"
 Write-Host "codex: $liveHome"
@@ -137,6 +240,17 @@ Write-Host ""
 
 if (-not $Apply) {
     Write-Host "review mode: no files will be changed"
+    Write-Host "planned copies:"
+    if ($installStates.Count -eq 0) {
+        Write-Host "  none"
+    }
+    else {
+        foreach ($state in $installStates) {
+            Write-Host "  $($state.Item.RepoPath) -> $($state.Item.LivePath)"
+        }
+    }
+
+    Write-Host ""
     Write-Host "planned reviewed config changes:"
     if (-not [bool]$reviewedConfigState.changed) {
         Write-Host "  none"
@@ -174,10 +288,13 @@ if (-not $Apply) {
     }
 
     Write-Host ""
+    Write-Host "changed: $($changedStates.Count)"
+    Write-Host "missing: $($missingStates.Count)"
+    Write-Host "unchanged: $($unchangedStates.Count)"
     Write-Host "reviewed config: $($reviewedConfigState.changed_count)"
     Write-Host "retired: $($retiredRemovalStates.Count)"
     Write-Host "foreign: $($foreignStates.Count)"
-    Write-Host "run with -Apply to execute the reviewed reset"
+    Write-Host "run with -Apply to install the approved plan"
     if (-not $SkipPluginRetirement) {
         Write-Host ""
         & (Join-Path $PSScriptRoot "retire-plugins.ps1") -CodexHome $liveHome
@@ -222,6 +339,30 @@ function Get-ItemBackupRoot {
     New-Item -ItemType Directory -Force $root | Out-Null
     $backupRoots[$LiveRoot] = $root
     return $root
+}
+
+foreach ($state in $installStates) {
+    $item = $state.Item
+    $previousState = "missing"
+    $backupPath = $null
+    if ($state.Exists) {
+        $itemBackupRoot = Get-ItemBackupRoot -LiveRoot $item.LiveRoot
+        $backupPath = Get-ItemBackupPath -Item $item -BackupRoot $itemBackupRoot
+        Backup-LiveItem -LivePath $item.LivePath -BackupRoot $itemBackupRoot -LiveRoot $item.LiveRoot -BackupScope $item.BackupScope -Type $item.Type
+        $previousState = "backup"
+    }
+
+    Copy-PortableItem -Source $item.RepoPath -Destination $item.LivePath -Type $item.Type -AllowedRoot $item.LiveRoot
+    $changes.Add([pscustomobject]@{
+        operation = "install"
+        target = $item.LivePath
+        type = $item.Type
+        live_root = $item.LiveRoot
+        previous_state = $previousState
+        backup_path = $backupPath
+        after = Get-PortablePathFingerprint -Path $item.LivePath
+    })
+    Write-Host "installed: $($item.LivePath)"
 }
 
 foreach ($state in $retiredRemovalStates) {
@@ -273,7 +414,7 @@ else {
     Write-Host "portable config unchanged: $liveConfigPath"
 }
 
-$targetSetChanged = -not (Test-ReceiptTargetSetEqual -Receipt $currentReceipt -RetiredItems $retiredItems)
+$targetSetChanged = -not (Test-ReceiptTargetSetEqual -Receipt $currentReceipt -ActiveItems $items -RetiredItems $retiredItems)
 $provenanceChanged = $null -eq $currentReceipt -or
     [string]$currentReceipt.source_ref -ne [string]$resolvedSourceRef -or
     [string]$currentReceipt.source_commit -ne [string]$resolvedSourceCommit
@@ -282,6 +423,16 @@ $receiptPath = $null
 
 if ($receiptNeeded) {
     $artifacts = @(
+        foreach ($item in $items) {
+            [ordered]@{
+                source = Get-RepoRelativePath -Path $item.RepoPath
+                target = $item.LivePath
+                type = $item.Type
+                state = "present"
+                ownership = "compass"
+                fingerprint = Get-PortablePathFingerprint -Path $item.LivePath
+            }
+        }
         foreach ($item in $retiredItems) {
             [ordered]@{
                 source = $null
@@ -321,6 +472,9 @@ if ($receiptNeeded) {
 }
 
 Write-Host ""
+Write-Host "changed: $($changedStates.Count)"
+Write-Host "missing: $($missingStates.Count)"
+Write-Host "unchanged: $($unchangedStates.Count)"
 Write-Host "reviewed config: $($reviewedConfigState.changed_count)"
 Write-Host "retired: $($retiredRemovalStates.Count)"
 Write-Host "foreign: $($foreignStates.Count)"

@@ -4,7 +4,7 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $baseCommit = "349b94acad6175561e56304704856c5632db6b6c"
 $testRoot = Join-Path ([System.IO.Path]::GetTempPath()) "compass-blank-roundtrip-$([guid]::NewGuid().ToString('N'))"
 $codexHome = Join-Path $testRoot "codex"
@@ -87,10 +87,10 @@ try {
         "-AgentsHome", $agentsHome,
         "-ClaudeHome", $claudeHome
     )
-    $resetArguments = @($homeArguments) + "-SkipPluginRetirement"
-    $legacyInstallArguments = @($resetArguments) + "-SkipSkillRuntimeSetup"
-    $blankInstall = Join-Path $PSScriptRoot "retire.ps1"
-    $blankVerify = Join-Path $PSScriptRoot "verify.ps1"
+    $portableArguments = @($homeArguments) + "-SkipPluginRetirement"
+    $legacyArguments = @($portableArguments) + "-SkipSkillRuntimeSetup"
+    $blankInstall = Join-Path $PSScriptRoot "install.ps1"
+    $blankVerify = Join-Path $PSScriptRoot "verify-live.ps1"
     $oldInstall = Join-Path $oldSourceRoot "scripts\install.ps1"
     $oldVerify = Join-Path $oldSourceRoot "scripts\verify-live.ps1"
 
@@ -153,7 +153,7 @@ command = "machine-local-command"
         "-Apply",
         "-Adopt",
         "-SourceRef", "base-fixture-$baseCommit"
-    ) + $legacyInstallArguments))
+    ) + $legacyArguments))
     [void](Invoke-TestScript -Path $oldVerify -Arguments (@(
         "-SkipCodexCommand",
         "-SkipPluginCheck",
@@ -167,7 +167,7 @@ command = "machine-local-command"
 
     $foreignEmptyDirectory = Join-Path $agentsHome "skills\compass\foreign-empty"
     New-Item -ItemType Directory -Force $foreignEmptyDirectory | Out-Null
-    [void](Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $resetArguments) -ExpectedExitCode 1)
+    [void](Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $portableArguments) -ExpectedExitCode 1)
     Assert-PathPresent -Path $foreignEmptyDirectory
     Assert-PathPresent -Path (Join-Path $agentsHome "skills\compass\SKILL.md")
     Remove-Item -LiteralPath $foreignEmptyDirectory -Force
@@ -193,7 +193,7 @@ command = "machine-local-command"
                 throw "junction regression did not create a reparse point"
             }
 
-            [void](Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $resetArguments) -ExpectedExitCode 1)
+            [void](Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $portableArguments) -ExpectedExitCode 1)
             Assert-PathPresent -Path $ownedDirectory
             Assert-PathPresent -Path $externalSkill
             $junctionItem = Get-Item -LiteralPath $ownedDirectory -Force
@@ -216,18 +216,18 @@ command = "machine-local-command"
             }
         }
 
-        [void](Invoke-TestScript -Path $oldInstall -Arguments (@("-Apply") + $legacyInstallArguments))
+        [void](Invoke-TestScript -Path $oldInstall -Arguments (@("-Apply") + $legacyArguments))
         Assert-PathPresent -Path (Join-Path $ownedDirectory "SKILL.md")
     }
 
     $ownedDrift = Join-Path $agentsHome "skills\compass\SKILL.md"
     Add-Content -LiteralPath $ownedDrift -Value "# changed after receipt"
-    [void](Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $resetArguments) -ExpectedExitCode 1)
+    [void](Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $portableArguments) -ExpectedExitCode 1)
     Assert-PathPresent -Path $ownedDrift
-    [void](Invoke-TestScript -Path $oldInstall -Arguments (@("-Apply") + $legacyInstallArguments))
+    [void](Invoke-TestScript -Path $oldInstall -Arguments (@("-Apply") + $legacyArguments))
 
     $beforePreview = Get-RootsState
-    $previewOutput = @(Invoke-TestScript -Path $blankInstall -Arguments $resetArguments)
+    $previewOutput = @(Invoke-TestScript -Path $blankInstall -Arguments $portableArguments)
     if ($previewOutput -notcontains "review mode: no files will be changed") {
         throw "blank preview did not identify review mode"
     }
@@ -235,12 +235,16 @@ command = "machine-local-command"
         throw "blank preview mutated scratch homes"
     }
 
-    [void](Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $resetArguments))
+    [void](Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $portableArguments))
     [void](Invoke-TestScript -Path $blankVerify -Arguments (@(
         "-SkipPluginCheck",
         "-RequireInSync"
     ) + $homeArguments))
 
+    $activeItems = @(Get-PortableFileMap -RepoRoot $repoRoot -CodexHome $codexHome -AgentsHome $agentsHome -ClaudeHome $claudeHome)
+    if ($activeItems.Count -ne 0) {
+        throw "blank active bundle contains $($activeItems.Count) item(s)"
+    }
     foreach ($retired in @(Get-RetiredPortableFileMap -CodexHome $codexHome -AgentsHome $agentsHome -ClaudeHome $claudeHome)) {
         Assert-PathAbsent -Path $retired.LivePath
     }
@@ -288,7 +292,7 @@ command = "machine-local-command"
     }
 
     $receiptCountBefore = @(Get-ChildItem -LiteralPath (Join-Path $codexHome "portable-receipts") -Filter "install-*.json" -File).Count
-    $secondApply = @(Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $resetArguments))
+    $secondApply = @(Invoke-TestScript -Path $blankInstall -Arguments (@("-Apply") + $portableArguments))
     if ($secondApply -notcontains "backups: none") {
         throw "second blank apply created backups"
     }
@@ -310,7 +314,7 @@ command = "machine-local-command"
     [void](Invoke-TestScript -Path $oldInstall -Arguments (@(
         "-Apply",
         "-SourceRef", "base-fixture-$baseCommit"
-    ) + $legacyInstallArguments))
+    ) + $legacyArguments))
     [void](Invoke-TestScript -Path $oldVerify -Arguments (@(
         "-SkipCodexCommand",
         "-SkipPluginCheck",
