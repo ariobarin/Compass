@@ -269,16 +269,147 @@ function Assert-PathUnderRoot {
         [string]$Root
     )
 
-    $fullRoot = [System.IO.Path]::GetFullPath($Root).TrimEnd("\")
-    $fullPath = [System.IO.Path]::GetFullPath($Path).TrimEnd("\")
+    $fullRoot = Get-NormalizedPortablePath -Path $Root
+    $fullPath = Get-NormalizedPortablePath -Path $Path
+    Assert-PortablePathHasNoReparsePoint -Path $fullPath
+    $prefix = Get-PortableDescendantPrefix -Path $fullRoot
+    if (
+        $fullPath -eq $fullRoot -or
+        -not $fullPath.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)
+    ) {
+        throw "refusing to write outside allowed root: $Path"
+    }
+}
 
-    if ($fullPath -eq $fullRoot) {
-        return
+function Get-NormalizedPortablePath {
+    param([string]$Path)
+
+    $fullPath = [System.IO.Path]::GetFullPath($Path)
+    $pathRoot = [System.IO.Path]::GetPathRoot($fullPath)
+    if ($fullPath.Length -gt $pathRoot.Length) {
+        $fullPath = $fullPath.TrimEnd(
+            [System.IO.Path]::DirectorySeparatorChar,
+            [System.IO.Path]::AltDirectorySeparatorChar
+        )
+    }
+    return $fullPath
+}
+
+function Get-PortableDescendantPrefix {
+    param([string]$Path)
+
+    $separator = [System.IO.Path]::DirectorySeparatorChar
+    if ($Path.EndsWith([string]$separator, [System.StringComparison]::Ordinal)) {
+        return $Path
+    }
+    return $Path + $separator
+}
+
+function Assert-PortablePathHasNoReparsePoint {
+    param([string]$Path)
+
+    $fullPath = Get-NormalizedPortablePath -Path $Path
+    $pathRoot = [System.IO.Path]::GetPathRoot($fullPath)
+    $separators = [char[]]@(
+        [System.IO.Path]::DirectorySeparatorChar,
+        [System.IO.Path]::AltDirectorySeparatorChar
+    )
+    $relative = $fullPath.Substring($pathRoot.Length).TrimStart($separators)
+    $current = $pathRoot
+    foreach ($part in @($relative.Split($separators) | Where-Object { $_ })) {
+        $current = Join-Path $current $part
+        $item = Get-Item -Force -LiteralPath $current -ErrorAction SilentlyContinue
+        if ($null -eq $item) {
+            break
+        }
+        $isReparsePoint = (
+            $item.Attributes -band [System.IO.FileAttributes]::ReparsePoint
+        ) -ne 0
+        $hasLinkType = (
+            $null -ne $item.PSObject.Properties["LinkType"] -and
+            -not [string]::IsNullOrEmpty([string]$item.LinkType)
+        )
+        if ($isReparsePoint -or $hasLinkType) {
+            throw "portable paths cannot cross links or junctions: $current"
+        }
+    }
+}
+
+function Test-PortablePathsOverlap {
+    param(
+        [string]$Left,
+        [string]$Right
+    )
+
+    $leftPath = Get-NormalizedPortablePath -Path $Left
+    $rightPath = Get-NormalizedPortablePath -Path $Right
+    if ($leftPath -eq $rightPath) {
+        return $true
     }
 
-    $prefix = "$fullRoot\"
-    if (-not $fullPath.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "refusing to write outside allowed root: $Path"
+    $leftPrefix = Get-PortableDescendantPrefix -Path $leftPath
+    $rightPrefix = Get-PortableDescendantPrefix -Path $rightPath
+    return (
+        $leftPath.StartsWith(
+            $rightPrefix,
+            [System.StringComparison]::OrdinalIgnoreCase
+        ) -or
+        $rightPath.StartsWith(
+            $leftPrefix,
+            [System.StringComparison]::OrdinalIgnoreCase
+        )
+    )
+}
+
+function Assert-PortableRootsDisjoint {
+    param(
+        [string]$RepoRoot,
+        [string]$CodexHome,
+        [string]$AgentsHome,
+        [string]$ClaudeHome
+    )
+
+    $roots = @(
+        [pscustomobject]@{ Name = "repository"; Path = $RepoRoot }
+        [pscustomobject]@{ Name = "Codex home"; Path = $CodexHome }
+        [pscustomobject]@{ Name = "agents home"; Path = $AgentsHome }
+        [pscustomobject]@{ Name = "Claude home"; Path = $ClaudeHome }
+    )
+    foreach ($root in $roots) {
+        Assert-PortablePathHasNoReparsePoint -Path $root.Path
+    }
+    for ($leftIndex = 0; $leftIndex -lt $roots.Count; $leftIndex++) {
+        for ($rightIndex = $leftIndex + 1; $rightIndex -lt $roots.Count; $rightIndex++) {
+            $left = $roots[$leftIndex]
+            $right = $roots[$rightIndex]
+            if (Test-PortablePathsOverlap -Left $left.Path -Right $right.Path) {
+                throw "portable roots overlap: $($left.Name) and $($right.Name)"
+            }
+        }
+    }
+}
+
+function Assert-PortableRelativePath {
+    param(
+        [string]$Path,
+        [string]$Context
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        throw "$Context must be a non-empty relative path"
+    }
+    $normalized = $Path.Replace("\", "/")
+    if (
+        [System.IO.Path]::IsPathRooted($Path) -or
+        $normalized.StartsWith("/") -or
+        $normalized -match "^[A-Za-z]:"
+    ) {
+        throw "$Context must be a relative path: $Path"
+    }
+    foreach ($part in $normalized.Split("/")) {
+        if ($part -in @("", ".", "..")) {
+            throw "$Context contains an unsafe path: $Path"
+        }
     }
 }
 
@@ -298,6 +429,11 @@ function Get-PortableFileMap {
         $ClaudeHome = Get-ClaudeHome
     }
     $script:PortableResolvedClaudeHome = $ClaudeHome
+    Assert-PortableRootsDisjoint `
+        -RepoRoot $RepoRoot `
+        -CodexHome $CodexHome `
+        -AgentsHome $AgentsHome `
+        -ClaudeHome $ClaudeHome
 
     $items = New-Object System.Collections.Generic.List[object]
 
@@ -390,6 +526,10 @@ function Get-PortableFileMap {
         })
     }
 
+    foreach ($item in $items) {
+        Assert-PathUnderRoot -Path $item.RepoPath -Root $RepoRoot
+        Assert-PathUnderRoot -Path $item.LivePath -Root $item.LiveRoot
+    }
     return $items
 }
 
@@ -418,6 +558,9 @@ function Get-RetiredPortableFileMap {
         if ($entry.type -notin @("file", "dir")) {
             throw "unsupported portable retirement type: $($entry.type)"
         }
+        Assert-PortableRelativePath `
+            -Path ([string]$entry.path) `
+            -Context "portable retirement path"
         $root = $roots[[string]$entry.scope]
         $livePath = Join-Path $root ([string]$entry.path)
         Assert-PathUnderRoot -Path $livePath -Root $root
@@ -438,27 +581,41 @@ function Assert-PortableTargetSetsDisjoint {
         [object[]]$RetiredItems
     )
 
-    $activeTargets = [System.Collections.Generic.HashSet[string]]::new(
-        [System.StringComparer]::OrdinalIgnoreCase
+    $sets = @(
+        [pscustomobject]@{ Name = "active"; Items = @($ActiveItems) }
+        [pscustomobject]@{ Name = "retired"; Items = @($RetiredItems) }
     )
-    foreach ($item in @($ActiveItems)) {
-        if ($null -eq $item) {
-            continue
-        }
-        [void]$activeTargets.Add([string]$item.LivePath)
-    }
-    $overlaps = @(
-        foreach ($item in @($RetiredItems)) {
-            if ($null -eq $item) {
+    foreach ($set in $sets) {
+        $setItems = @($set.Items)
+        for ($leftIndex = 0; $leftIndex -lt $setItems.Count; $leftIndex++) {
+            $left = $setItems[$leftIndex]
+            if ($null -eq $left) {
                 continue
             }
-            if ($activeTargets.Contains([string]$item.LivePath)) {
-                [string]$item.LivePath
+            for ($rightIndex = $leftIndex + 1; $rightIndex -lt $setItems.Count; $rightIndex++) {
+                $right = $setItems[$rightIndex]
+                if (
+                    $null -ne $right -and
+                    (Test-PortablePathsOverlap -Left $left.LivePath -Right $right.LivePath)
+                ) {
+                    throw "portable $($set.Name) targets overlap: $($left.LivePath) and $($right.LivePath)"
+                }
             }
         }
-    )
-    if ($overlaps.Count -gt 0) {
-        throw "portable targets cannot be both active and retired: $($overlaps -join ', ')"
+    }
+
+    foreach ($active in @($ActiveItems)) {
+        if ($null -eq $active) {
+            continue
+        }
+        foreach ($retired in @($RetiredItems)) {
+            if (
+                $null -ne $retired -and
+                (Test-PortablePathsOverlap -Left $active.LivePath -Right $retired.LivePath)
+            ) {
+                throw "portable targets cannot be both active and retired: $($active.LivePath) and $($retired.LivePath)"
+            }
+        }
     }
 }
 

@@ -571,6 +571,14 @@ def evaluate(
     live_text = read_text(live_path, missing_ok=True)
     entries = parse_reviewed(reviewed_text)
     retired_entries = parse_retirements(retirement_path)
+    active_paths = {entry.path_parts for entry in entries}
+    retired_paths = {entry.path_parts for entry in retired_entries}
+    overlaps = sorted(active_paths & retired_paths)
+    if overlaps:
+        raise ReviewedConfigError(
+            "reviewed config keys cannot be both active and retired: "
+            + ", ".join(".".join(path) for path in overlaps)
+        )
     parsed_live = parse_live(live_text, [*entries, *retired_entries])
     changes = build_changes(entries, parsed_live)
     merged = merge_text(live_text, reviewed_text, entries, parsed_live)

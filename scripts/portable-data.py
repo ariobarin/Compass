@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -35,6 +36,14 @@ MANIFEST_STRINGS = {
 }
 MANIFEST_BOOLEANS: dict[str, tuple[str, ...]] = {}
 AGENT_STRING_FIELDS = ("name", "description", "developer_instructions")
+NAME_ARRAYS = {
+    ("agents", "skills"),
+    ("agents", "stateful_skills"),
+    ("claude", "skills"),
+    ("claude", "derived_skills"),
+    ("claude", "agents"),
+    ("claude", "derived_agents"),
+}
 
 
 def read_toml(path: Path) -> dict[str, Any]:
@@ -75,6 +84,20 @@ def require_string_array(
     if len(value) != len(set(value)):
         raise ValueError(f"manifest [{section}].{key} contains duplicates")
     return value
+
+
+def validate_relative_path(value: str, *, context: str) -> None:
+    normalized = value.replace("\\", "/")
+    if normalized.startswith("/") or re.match(r"^[A-Za-z]:", normalized):
+        raise ValueError(f"{context} must be a relative path: {value!r}")
+    parts = normalized.split("/")
+    if any(part in ("", ".", "..") for part in parts):
+        raise ValueError(f"{context} contains an unsafe path: {value!r}")
+
+
+def validate_name(value: str, *, context: str) -> None:
+    if value in (".", "..") or "/" in value or "\\" in value:
+        raise ValueError(f"{context} must be one path name: {value!r}")
 
 
 def require_string(table: dict[str, Any], section: str, key: str) -> str:
@@ -118,7 +141,13 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
             )
 
         for key in MANIFEST_ARRAYS.get(section, ()):
-            require_string_array(table, section, key)
+            values = require_string_array(table, section, key)
+            for value in values:
+                context = f"manifest [{section}].{key}"
+                if (section, key) in NAME_ARRAYS:
+                    validate_name(value, context=context)
+                else:
+                    validate_relative_path(value, context=context)
         for key in MANIFEST_STRINGS.get(section, ()):
             require_string(table, section, key)
         for key in MANIFEST_BOOLEANS.get(section, ()):

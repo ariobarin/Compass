@@ -225,6 +225,17 @@ class ReviewedConfigTests(unittest.TestCase):
         self.assertEqual(result["blocked_count"], 1)
         self.assertEqual(result["merged_text"], live)
 
+    def test_active_and_retired_config_overlap_fails(self):
+        with self.assertRaisesRegex(
+            reviewed_config.ReviewedConfigError,
+            "cannot be both active and retired",
+        ):
+            self.evaluate(
+                reviewed='model = "gpt-5.6-sol"\n',
+                live='model = "gpt-5.6-sol"\n',
+                retirements=[{"path": "model", "expected": "gpt-5.6-sol"}],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

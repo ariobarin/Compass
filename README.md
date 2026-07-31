@@ -46,14 +46,6 @@ Verify live targets:
 .\scripts\verify-live.ps1 -RequireInSync
 ```
 
-Inspect exact file differences or refresh allowlisted source from live targets:
-
-```powershell
-.\scripts\diff-live.ps1
-.\scripts\snapshot.ps1
-.\scripts\snapshot.ps1 -Apply
-```
-
 Run the complete portable test suite:
 
 ```powershell

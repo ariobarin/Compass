@@ -9,6 +9,8 @@ $sourceRoot = Join-Path $testRoot "source"
 $codexHome = Join-Path $testRoot "codex-home"
 $agentsHome = Join-Path $testRoot "agents-home"
 $claudeHome = Join-Path $testRoot "claude-home"
+$linkedCodexHome = Join-Path $testRoot "linked-codex-home"
+$brokenLinkTarget = Join-Path $testRoot "broken-link-target"
 $powerShellPath = (Get-Process -Id $PID).Path
 
 function Write-Utf8Text {
@@ -69,6 +71,11 @@ function Assert-FileContains {
 try {
     New-Item -ItemType Directory -Force $sourceRoot, $codexHome, $agentsHome, $claudeHome | Out-Null
     Copy-Item -LiteralPath $PSScriptRoot -Destination (Join-Path $sourceRoot "scripts") -Recurse
+    . (Join-Path $sourceRoot "scripts\common.ps1")
+    $filesystemRoot = [System.IO.Path]::GetPathRoot($sourceRoot)
+    if (-not (Test-PortablePathsOverlap -Left $filesystemRoot -Right $sourceRoot)) {
+        throw "filesystem root did not overlap its descendant"
+    }
 
     Write-Utf8Text -Path (Join-Path $sourceRoot "manifests\portable-files.toml") -Text @'
 [codex]
@@ -206,6 +213,31 @@ description: Validate direct Claude skill installation.
 '@
     [void](Invoke-TestScript -Path $installPath -Arguments (@("-Apply", "-SkipPluginRetirement") + $homeArguments) -ExpectedExitCode 1)
     Assert-FileContains -Path (Join-Path $codexHome "AGENTS.md") -Expected "Portable Codex instructions"
+
+    Write-Utf8Text -Path (Join-Path $sourceRoot "manifests\portable-retirements.json") -Text @'
+{
+  "schema_version": 1,
+  "base_commit": "fixture",
+  "items": [
+    {"scope": "codex", "type": "file", "path": "agents/sample.toml"}
+  ],
+  "config_entries": []
+}
+'@
+    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $homeArguments) -ExpectedExitCode 1)
+
+    Write-Utf8Text -Path (Join-Path $sourceRoot "manifests\portable-retirements.json") -Text @'
+{
+  "schema_version": 1,
+  "base_commit": "fixture",
+  "items": [
+    {"scope": "codex", "type": "dir", "path": "."}
+  ],
+  "config_entries": []
+}
+'@
+    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $homeArguments) -ExpectedExitCode 1)
+
     Write-Utf8Text -Path (Join-Path $sourceRoot "manifests\portable-retirements.json") -Text @'
 {
   "schema_version": 1,
@@ -215,6 +247,50 @@ description: Validate direct Claude skill installation.
 }
 '@
 
+    $manifestPath = Join-Path $sourceRoot "manifests\portable-files.toml"
+    $manifestText = Get-Content -Raw -LiteralPath $manifestPath
+    Write-Utf8Text `
+        -Path $manifestPath `
+        -Text $manifestText.Replace('files = ["AGENTS.md"]', 'files = ["AGENTS.md", "agents"]')
+    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $homeArguments) -ExpectedExitCode 1)
+    Write-Utf8Text -Path $manifestPath -Text $manifestText
+
+    Write-Utf8Text `
+        -Path $manifestPath `
+        -Text $manifestText.Replace('files = ["AGENTS.md"]', 'files = ["AGENTS.md", "../outside.txt"]')
+    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $homeArguments) -ExpectedExitCode 1)
+    Write-Utf8Text -Path $manifestPath -Text $manifestText
+
+    $overlappingHomeArguments = @(
+        "-CodexHome", (Join-Path $sourceRoot "codex-home"),
+        "-AgentsHome", $agentsHome,
+        "-ClaudeHome", $claudeHome
+    )
+    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $overlappingHomeArguments) -ExpectedExitCode 1)
+    Assert-FileContains -Path (Join-Path $sourceRoot "codex\AGENTS.md") -Expected "Portable Codex instructions"
+
+    $linkType = if ($env:OS -eq "Windows_NT") { "Junction" } else { "SymbolicLink" }
+    New-Item `
+        -ItemType $linkType `
+        -Path $linkedCodexHome `
+        -Target (Join-Path $sourceRoot "codex") | Out-Null
+    $linkedHomeArguments = @(
+        "-CodexHome", $linkedCodexHome,
+        "-AgentsHome", $agentsHome,
+        "-ClaudeHome", $claudeHome
+    )
+    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $linkedHomeArguments) -ExpectedExitCode 1)
+    Assert-FileContains -Path (Join-Path $sourceRoot "codex\AGENTS.md") -Expected "Portable Codex instructions"
+    [System.IO.Directory]::Delete($linkedCodexHome)
+
+    New-Item -ItemType Directory -Force $brokenLinkTarget | Out-Null
+    New-Item `
+        -ItemType $linkType `
+        -Path $linkedCodexHome `
+        -Target $brokenLinkTarget | Out-Null
+    Remove-Item -LiteralPath $brokenLinkTarget -Recurse -Force
+    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $linkedHomeArguments) -ExpectedExitCode 1)
+
     Add-Content -LiteralPath (Join-Path $codexHome "AGENTS.md") -Value "# foreign change"
     [void](Invoke-TestScript -Path $installPath -Arguments (@("-Apply", "-SkipPluginRetirement") + $homeArguments) -ExpectedExitCode 1)
     Assert-FileContains -Path (Join-Path $codexHome "AGENTS.md") -Expected "foreign change"
@@ -222,6 +298,9 @@ description: Validate direct Claude skill installation.
     Write-Host "portable bundle test: ok"
 }
 finally {
+    if ($null -ne (Get-Item -Force -LiteralPath $linkedCodexHome -ErrorAction SilentlyContinue)) {
+        [System.IO.Directory]::Delete($linkedCodexHome)
+    }
     if (Test-Path -LiteralPath $testRoot) {
         Remove-Item -LiteralPath $testRoot -Recurse -Force
     }
