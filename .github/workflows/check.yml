@@ -1,0 +1,28 @@
+name: check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  reset:
+    runs-on: windows-2025
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Run reset tests
+        shell: pwsh
+        run: ./reset/v1/test-all.ps1
+
+      - name: Check diff formatting
+        shell: pwsh
+        run: git diff --check HEAD^

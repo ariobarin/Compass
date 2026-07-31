@@ -1,7 +1,0 @@
-interface:
-  display_name: "Benchmark Run Operator"
-  short_description: "Operate attributable benchmark runs"
-  default_prompt: "Use $benchmark-run-operator to launch, validate, recover, and rebuild this benchmark run."
-
-policy:
-  allow_implicit_invocation: true
