@@ -68,6 +68,17 @@ function Assert-FileContains {
     }
 }
 
+function Remove-TestDirectoryLink {
+    param([string]$Path)
+
+    if ($env:OS -eq "Windows_NT") {
+        [System.IO.Directory]::Delete($Path)
+    }
+    else {
+        Remove-Item -LiteralPath $Path -Force
+    }
+}
+
 try {
     New-Item -ItemType Directory -Force $sourceRoot, $codexHome, $agentsHome, $claudeHome | Out-Null
     Copy-Item -LiteralPath $PSScriptRoot -Destination (Join-Path $sourceRoot "scripts") -Recurse
@@ -281,7 +292,7 @@ description: Validate direct Claude skill installation.
     )
     [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $linkedHomeArguments) -ExpectedExitCode 1)
     Assert-FileContains -Path (Join-Path $sourceRoot "codex\AGENTS.md") -Expected "Portable Codex instructions"
-    [System.IO.Directory]::Delete($linkedCodexHome)
+    Remove-TestDirectoryLink -Path $linkedCodexHome
 
     New-Item -ItemType Directory -Force $brokenLinkTarget | Out-Null
     New-Item `
@@ -299,7 +310,7 @@ description: Validate direct Claude skill installation.
 }
 finally {
     if ($null -ne (Get-Item -Force -LiteralPath $linkedCodexHome -ErrorAction SilentlyContinue)) {
-        [System.IO.Directory]::Delete($linkedCodexHome)
+        Remove-TestDirectoryLink -Path $linkedCodexHome
     }
     if (Test-Path -LiteralPath $testRoot) {
         Remove-Item -LiteralPath $testRoot -Recurse -Force
