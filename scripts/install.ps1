@@ -59,7 +59,7 @@ if (-not $Apply) {
 
 $backupRoot = $null
 if (@($changes | Where-Object { $_.Exists }).Count -gt 0) {
-    $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $stamp = Get-Date -Format "yyyyMMdd-HHmmss-fffffff"
     $backupRoot = Join-Path $liveHome "portable-backups\$stamp"
 }
 
@@ -69,9 +69,9 @@ foreach ($state in $changes) {
         Backup-LiveItem `
             -LivePath $item.LivePath `
             -BackupRoot $backupRoot `
+            -BackupAllowedRoot $liveHome `
             -LiveRoot $item.LiveRoot `
-            -BackupScope $item.BackupScope `
-            -Type $item.Type
+            -BackupScope $item.BackupScope
     }
     Copy-PortableItem `
         -Source $item.RepoPath `

@@ -250,6 +250,35 @@ function Assert-PortablePathHasNoReparsePoint {
     }
 }
 
+function Assert-PortableTreeHasNoReparsePoint {
+    param([string]$Root)
+
+    Assert-PortablePathHasNoReparsePoint -Path $Root
+    if (-not (Test-Path -LiteralPath $Root -PathType Container)) {
+        return
+    }
+    $pending = New-Object System.Collections.Generic.Queue[string]
+    $pending.Enqueue($Root)
+    while ($pending.Count -gt 0) {
+        $current = $pending.Dequeue()
+        foreach ($item in Get-ChildItem -LiteralPath $current -Force) {
+            $isReparsePoint = (
+                $item.Attributes -band [System.IO.FileAttributes]::ReparsePoint
+            ) -ne 0
+            $hasLinkType = (
+                $null -ne $item.PSObject.Properties["LinkType"] -and
+                -not [string]::IsNullOrEmpty([string]$item.LinkType)
+            )
+            if ($isReparsePoint -or $hasLinkType) {
+                throw "portable directory trees cannot contain links or junctions: $($item.FullName)"
+            }
+            if ($item.PSIsContainer) {
+                $pending.Enqueue($item.FullName)
+            }
+        }
+    }
+}
+
 function Assert-PathUnderRoot {
     param(
         [string]$Path,
@@ -397,6 +426,12 @@ function Get-PortableFileMap {
         Assert-PathUnderRoot -Path $item.LivePath -Root $item.LiveRoot
     }
     Assert-PortableTargetsDisjoint -Items $items
+    $backupBase = Join-Path $CodexHome "portable-backups"
+    foreach ($item in $items) {
+        if (Test-PortablePathsOverlap -Left $item.LivePath -Right $backupBase) {
+            throw "portable target overlaps backup root: $($item.LivePath)"
+        }
+    }
     return $items
 }
 
@@ -419,18 +454,21 @@ function Backup-LiveItem {
     param(
         [string]$LivePath,
         [string]$BackupRoot,
+        [string]$BackupAllowedRoot,
         [string]$LiveRoot,
-        [string]$BackupScope,
-        [string]$Type
+        [string]$BackupScope
     )
 
     if (-not (Test-Path -LiteralPath $LivePath)) {
         return
     }
     Assert-PathUnderRoot -Path $LivePath -Root $LiveRoot
+    Assert-PathUnderRoot -Path $BackupRoot -Root $BackupAllowedRoot
     $relative = $LivePath.Substring($LiveRoot.Length).TrimStart("\", "/")
     $backupPath = Join-Path (Join-Path $BackupRoot $BackupScope) $relative
-    if ($Type -eq "dir") {
+    Assert-PathUnderRoot -Path $backupPath -Root $BackupAllowedRoot
+    if (Test-Path -LiteralPath $LivePath -PathType Container) {
+        Assert-PortableTreeHasNoReparsePoint -Root $LivePath
         New-Item -ItemType Directory -Force (Split-Path -Parent $backupPath) | Out-Null
         Copy-Item -LiteralPath $LivePath -Destination $backupPath -Recurse -Force
         return
@@ -447,17 +485,24 @@ function Copy-PortableItem {
         [string]$AllowedRoot
     )
 
-    if (-not (Test-Path -LiteralPath $Source)) {
-        throw "missing portable source: $Source"
+    $sourceType = if ($Type -eq "dir") { "Container" } else { "Leaf" }
+    if (-not (Test-Path -LiteralPath $Source -PathType $sourceType)) {
+        throw "missing portable $Type source: $Source"
     }
+    Assert-PortableTreeHasNoReparsePoint -Root $Source
     Assert-PathUnderRoot -Path $Destination -Root $AllowedRoot
     if ($Type -eq "dir") {
         if (Test-Path -LiteralPath $Destination) {
+            Assert-PortableTreeHasNoReparsePoint -Root $Destination
             Remove-Item -LiteralPath $Destination -Recurse -Force
         }
         New-Item -ItemType Directory -Force (Split-Path -Parent $Destination) | Out-Null
         Copy-Item -LiteralPath $Source -Destination $Destination -Recurse -Force
         return
+    }
+    if (Test-Path -LiteralPath $Destination -PathType Container) {
+        Assert-PortableTreeHasNoReparsePoint -Root $Destination
+        Remove-Item -LiteralPath $Destination -Recurse -Force
     }
     New-DirectoryForFile -Path $Destination
     Copy-Item -LiteralPath $Source -Destination $Destination -Force
@@ -470,6 +515,7 @@ function Get-PortableDirectoryFileMap {
     if (-not (Test-Path -LiteralPath $Root -PathType Container)) {
         return $map
     }
+    Assert-PortableTreeHasNoReparsePoint -Root $Root
     $resolvedRoot = (Resolve-Path -LiteralPath $Root).Path
     foreach ($file in Get-ChildItem -LiteralPath $Root -Recurse -File -Force) {
         $relative = $file.FullName.Substring($resolvedRoot.Length).TrimStart("\", "/")
@@ -498,8 +544,9 @@ function Test-PortableFileMapsEqual {
 function Test-PortableItemInSync {
     param([object]$Item)
 
-    if (-not (Test-Path -LiteralPath $Item.RepoPath)) {
-        throw "missing portable source: $($Item.RepoPath)"
+    $sourceType = if ($Item.Type -eq "dir") { "Container" } else { "Leaf" }
+    if (-not (Test-Path -LiteralPath $Item.RepoPath -PathType $sourceType)) {
+        throw "missing portable $($Item.Type) source: $($Item.RepoPath)"
     }
     if (-not (Test-Path -LiteralPath $Item.LivePath)) {
         return $false
