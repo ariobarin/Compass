@@ -6,6 +6,7 @@
 home = "$CODEX_HOME or %USERPROFILE%\\.codex"
 
 files = [
+  "AGENTS.md",
 ]
 
 dirs = [
@@ -18,11 +19,6 @@ home = "$HOME\\.agents"
 skills_dir = "$HOME\\.agents\\skills"
 
 skills = [
-]
-
-# Stateful skills preserve runtime artifacts and Python caches inside their live
-# directory while Compass updates the reviewed source files.
-stateful_skills = [
 ]
 
 [claude]
@@ -51,13 +47,8 @@ agents = []
 derived_agents = [
 ]
 
-[config]
-review_files = []
-reason = "Add at most one reviewed TOML overlay under codex. Machine-local and generated values remain untouched."
-
 [repo_only]
-# These paths are repository-root paths. Installed Codex and Claude surfaces are
-# mapped above. Carried packs are opt-in project resources and are not installed.
+# These paths are repository-root paths. Portable sources are mapped above.
 files = [
   ".gitattributes",
   ".gitignore",

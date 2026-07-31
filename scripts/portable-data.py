@@ -15,15 +15,13 @@ MANIFEST_SECTIONS = (
     "codex",
     "agents",
     "claude",
-    "config",
     "repo_only",
     "local_only",
 )
 MANIFEST_ARRAYS = {
     "codex": ("files", "dirs"),
-    "agents": ("skills", "stateful_skills"),
+    "agents": ("skills",),
     "claude": ("files", "skills", "derived_skills", "agents", "derived_agents"),
-    "config": ("review_files",),
     "repo_only": ("files", "dirs"),
     "local_only": ("files", "dirs", "patterns"),
 }
@@ -31,14 +29,11 @@ MANIFEST_STRINGS = {
     "codex": ("home",),
     "agents": ("home", "skills_dir"),
     "claude": ("home", "skills_dir", "agents_dir"),
-    "config": ("reason",),
     "repo_only": ("reason",),
 }
-MANIFEST_BOOLEANS: dict[str, tuple[str, ...]] = {}
 AGENT_STRING_FIELDS = ("name", "description", "developer_instructions")
 NAME_ARRAYS = {
     ("agents", "skills"),
-    ("agents", "stateful_skills"),
     ("claude", "skills"),
     ("claude", "derived_skills"),
     ("claude", "agents"),
@@ -109,15 +104,6 @@ def require_string(table: dict[str, Any], section: str, key: str) -> str:
     return value
 
 
-def require_boolean(table: dict[str, Any], section: str, key: str) -> bool:
-    if key not in table:
-        raise ValueError(f"manifest [{section}] requires {key}")
-    value = table[key]
-    if not isinstance(value, bool):
-        raise ValueError(f"manifest [{section}].{key} must be a boolean")
-    return value
-
-
 def validate_manifest(manifest: dict[str, Any]) -> None:
     unknown_sections = sorted(set(manifest) - set(MANIFEST_SECTIONS))
     if unknown_sections:
@@ -132,7 +118,6 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
 
         allowed_keys = set(MANIFEST_ARRAYS.get(section, ()))
         allowed_keys.update(MANIFEST_STRINGS.get(section, ()))
-        allowed_keys.update(MANIFEST_BOOLEANS.get(section, ()))
         unknown_keys = sorted(set(table) - allowed_keys)
         if unknown_keys:
             raise ValueError(
@@ -150,18 +135,6 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
                     validate_relative_path(value, context=context)
         for key in MANIFEST_STRINGS.get(section, ()):
             require_string(table, section, key)
-        for key in MANIFEST_BOOLEANS.get(section, ()):
-            require_boolean(table, section, key)
-
-    skills = set(manifest["agents"]["skills"])
-    unknown_stateful = sorted(set(manifest["agents"]["stateful_skills"]) - skills)
-    if unknown_stateful:
-        raise ValueError(
-            "manifest stateful skills missing from agents.skills: "
-            + ", ".join(unknown_stateful)
-        )
-
-
 def validate_agent(path: Path, data: dict[str, Any]) -> None:
     for field in AGENT_STRING_FIELDS:
         value = data.get(field)

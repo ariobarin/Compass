@@ -1,11 +1,11 @@
 # Contributing
 
-Compass carries portable configuration infrastructure and the reviewed global
-definitions selected by its manifest. Contributions should make that boundary
-smaller, clearer, safer, or intentionally more capable.
+Compass carries the current portable agent setup selected by
+`manifests/portable-files.toml`. Keep the source small, explicit, and directly
+installable.
 
-Do not add project guidance, hosted applications, optional packs, source
-archives, templates, generic workflow frameworks, or machine state.
+Do not add project guidance, hosted applications, source archives, templates,
+runtime state, or compatibility machinery for previous layouts.
 
 Before opening a pull request, run:
 
@@ -15,6 +15,5 @@ git diff --check
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\test-all.ps1
 ```
 
-Changes to portable sources must preserve preview-first behavior, exact
-fingerprint ownership, unrelated live state, config overlay semantics, and
-focused round-trip coverage.
+Portable changes must preserve preview-first installation, backups before
+replacement, unlisted live state, path containment, and round-trip coverage.

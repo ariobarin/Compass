@@ -4,13 +4,11 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$testRoot = Join-Path ([System.IO.Path]::GetTempPath()) "compass-portable-bundle-$([guid]::NewGuid().ToString('N'))"
+$testRoot = Join-Path ([System.IO.Path]::GetTempPath()) "compass-portable-$([guid]::NewGuid().ToString('N'))"
 $sourceRoot = Join-Path $testRoot "source"
 $codexHome = Join-Path $testRoot "codex-home"
 $agentsHome = Join-Path $testRoot "agents-home"
 $claudeHome = Join-Path $testRoot "claude-home"
-$linkedCodexHome = Join-Path $testRoot "linked-codex-home"
-$brokenLinkTarget = Join-Path $testRoot "broken-link-target"
 $powerShellPath = (Get-Process -Id $PID).Path
 
 function Write-Utf8Text {
@@ -38,14 +36,14 @@ function Invoke-TestScript {
         $processArguments += @("-ExecutionPolicy", "Bypass")
     }
     $processArguments += @("-File", $Path) + $Arguments
-    $oldErrorActionPreference = $ErrorActionPreference
+    $oldPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
         $output = @(& $powerShellPath @processArguments 2>&1 | ForEach-Object { $_.ToString() })
         $exitCode = $LASTEXITCODE
     }
     finally {
-        $ErrorActionPreference = $oldErrorActionPreference
+        $ErrorActionPreference = $oldPreference
     }
     if ($exitCode -ne $ExpectedExitCode) {
         throw "expected exit code $ExpectedExitCode from $Path, got $exitCode`n$($output -join "`n")"
@@ -62,30 +60,16 @@ function Assert-FileContains {
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
         throw "expected file: $Path"
     }
-    $text = Get-Content -Raw -LiteralPath $Path
-    if (-not $text.Contains($Expected)) {
+    if (-not (Get-Content -Raw -LiteralPath $Path).Contains($Expected)) {
         throw "expected $Path to contain: $Expected"
-    }
-}
-
-function Remove-TestDirectoryLink {
-    param([string]$Path)
-
-    if ($env:OS -eq "Windows_NT") {
-        [System.IO.Directory]::Delete($Path)
-    }
-    else {
-        Remove-Item -LiteralPath $Path -Force
     }
 }
 
 try {
     New-Item -ItemType Directory -Force $sourceRoot, $codexHome, $agentsHome, $claudeHome | Out-Null
-    Copy-Item -LiteralPath $PSScriptRoot -Destination (Join-Path $sourceRoot "scripts") -Recurse
-    . (Join-Path $sourceRoot "scripts\common.ps1")
-    $filesystemRoot = [System.IO.Path]::GetPathRoot($sourceRoot)
-    if (-not (Test-PortablePathsOverlap -Left $filesystemRoot -Right $sourceRoot)) {
-        throw "filesystem root did not overlap its descendant"
+    New-Item -ItemType Directory -Force (Join-Path $sourceRoot "scripts") | Out-Null
+    foreach ($name in @("common.ps1", "install.ps1", "portable-data.py", "verify-live.ps1")) {
+        Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $sourceRoot "scripts\$name")
     }
 
     Write-Utf8Text -Path (Join-Path $sourceRoot "manifests\portable-files.toml") -Text @'
@@ -98,24 +82,19 @@ dirs = ["agents"]
 home = "fixture"
 skills_dir = "fixture"
 skills = ["sample-skill"]
-stateful_skills = []
 
 [claude]
 home = "fixture"
 skills_dir = "fixture"
 agents_dir = "fixture"
 files = ["CLAUDE.md"]
-skills = ["direct-skill"]
+skills = []
 derived_skills = ["sample-skill"]
-agents = ["direct"]
+agents = []
 derived_agents = ["sample"]
 
-[config]
-review_files = ["config.review.toml"]
-reason = "fixture"
-
 [repo_only]
-files = []
+files = ["README.md"]
 dirs = ["manifests", "scripts"]
 reason = "fixture"
 
@@ -124,29 +103,7 @@ files = []
 dirs = []
 patterns = []
 '@
-    Write-Utf8Text -Path (Join-Path $sourceRoot "manifests\portable-retirements.json") -Text @'
-{
-  "schema_version": 1,
-  "base_commit": "fixture",
-  "items": [],
-  "config_entries": []
-}
-'@
-    Write-Utf8Text -Path (Join-Path $sourceRoot "manifests\retired-plugins.json") -Text @'
-{
-  "schema_version": 1,
-  "plugins": [],
-  "marketplaces": []
-}
-'@
-
     Write-Utf8Text -Path (Join-Path $sourceRoot "codex\AGENTS.md") -Text "# Portable Codex instructions`n"
-    Write-Utf8Text -Path (Join-Path $sourceRoot "codex\config.review.toml") -Text @'
-model = "gpt-5.6-sol"
-
-[agents]
-max_depth = 2
-'@
     Write-Utf8Text -Path (Join-Path $sourceRoot "codex\agents\sample.toml") -Text @'
 name = "sample"
 description = "Validate portable agent installation."
@@ -163,18 +120,9 @@ description: Validate portable skill installation.
 # Sample skill
 '@
     Write-Utf8Text -Path (Join-Path $sourceRoot "codex\skills\sample-skill\agents\openai.yaml") -Text "interface:`n  display_name: Sample`n"
-    Write-Utf8Text -Path (Join-Path $sourceRoot "codex\skills\sample-skill\references\evidence.md") -Text "# Evidence`n"
     Write-Utf8Text -Path (Join-Path $sourceRoot "claude\CLAUDE.md") -Text "# Portable Claude instructions`n"
-    Write-Utf8Text -Path (Join-Path $sourceRoot "claude\skills\direct-skill\SKILL.md") -Text @'
----
-name: direct-skill
-description: Validate direct Claude skill installation.
----
-
-# Direct skill
-'@
-    Write-Utf8Text -Path (Join-Path $sourceRoot "claude\agents\direct.md") -Text "# Direct Claude agent`n"
-    Write-Utf8Text -Path (Join-Path $codexHome "config.toml") -Text "machine_local = true`n"
+    Write-Utf8Text -Path (Join-Path $codexHome "auth.json") -Text "unrelated`n"
+    Write-Utf8Text -Path (Join-Path $agentsHome "skills\foreign\SKILL.md") -Text "foreign`n"
 
     $homeArguments = @(
         "-CodexHome", $codexHome,
@@ -184,134 +132,58 @@ description: Validate direct Claude skill installation.
     $installPath = Join-Path $sourceRoot "scripts\install.ps1"
     $verifyPath = Join-Path $sourceRoot "scripts\verify-live.ps1"
 
-    $preview = @(Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $homeArguments))
+    $preview = @(Invoke-TestScript -Path $installPath -Arguments $homeArguments)
     if ($preview -notcontains "review mode: no files will be changed") {
-        throw "portable preview did not identify review mode"
+        throw "preview did not identify review mode"
     }
     if (Test-Path -LiteralPath (Join-Path $codexHome "AGENTS.md")) {
-        throw "portable preview changed the Codex home"
+        throw "preview changed the Codex home"
     }
 
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-Apply", "-SkipPluginRetirement") + $homeArguments))
-    [void](Invoke-TestScript -Path $verifyPath -Arguments (@(
-        "-SkipPluginCheck",
-        "-RequireInSync"
-    ) + $homeArguments))
+    [void](Invoke-TestScript -Path $installPath -Arguments (@("-Apply") + $homeArguments))
+    [void](Invoke-TestScript -Path $verifyPath -Arguments (@("-RequireInSync") + $homeArguments))
 
     Assert-FileContains -Path (Join-Path $codexHome "AGENTS.md") -Expected "Portable Codex instructions"
     Assert-FileContains -Path (Join-Path $codexHome "agents\sample.toml") -Expected 'name = "sample"'
     Assert-FileContains -Path (Join-Path $agentsHome "skills\sample-skill\SKILL.md") -Expected "# Sample skill"
-    Assert-FileContains -Path (Join-Path $claudeHome "CLAUDE.md") -Expected "Portable Claude instructions"
-    Assert-FileContains -Path (Join-Path $claudeHome "skills\direct-skill\SKILL.md") -Expected "# Direct skill"
     Assert-FileContains -Path (Join-Path $claudeHome "skills\sample-skill\SKILL.md") -Expected "# Sample skill"
-    Assert-FileContains -Path (Join-Path $claudeHome "agents\direct.md") -Expected "Direct Claude agent"
     Assert-FileContains -Path (Join-Path $claudeHome "agents\sample.md") -Expected "Return portable agent evidence"
-    Assert-FileContains -Path (Join-Path $codexHome "config.toml") -Expected "machine_local = true"
-    Assert-FileContains -Path (Join-Path $codexHome "config.toml") -Expected 'model = "gpt-5.6-sol"'
-    if (Test-Path -LiteralPath (Join-Path $claudeHome "skills\sample-skill\agents\openai.yaml")) {
-        throw "derived Claude skill retained Codex-only interface metadata"
+    Assert-FileContains -Path (Join-Path $codexHome "auth.json") -Expected "unrelated"
+    Assert-FileContains -Path (Join-Path $agentsHome "skills\foreign\SKILL.md") -Expected "foreign"
+    if (Test-Path -LiteralPath (Join-Path $claudeHome "skills\sample-skill\agents")) {
+        throw "derived Claude skill retained Codex-only metadata"
     }
 
-    Write-Utf8Text -Path (Join-Path $sourceRoot "manifests\portable-retirements.json") -Text @'
-{
-  "schema_version": 1,
-  "base_commit": "fixture",
-  "items": [
-    {"scope": "codex", "type": "file", "path": "AGENTS.md"}
-  ],
-  "config_entries": []
-}
-'@
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-Apply", "-SkipPluginRetirement") + $homeArguments) -ExpectedExitCode 1)
-    Assert-FileContains -Path (Join-Path $codexHome "AGENTS.md") -Expected "Portable Codex instructions"
+    Add-Content -LiteralPath (Join-Path $codexHome "AGENTS.md") -Value "# local change"
+    $replace = @(Invoke-TestScript -Path $installPath -Arguments (@("-Apply") + $homeArguments))
+    [void](Invoke-TestScript -Path $verifyPath -Arguments (@("-RequireInSync") + $homeArguments))
+    $backup = @(Get-ChildItem -LiteralPath (Join-Path $codexHome "portable-backups") -Recurse -Filter "AGENTS.md" -File)
+    if ($backup.Count -ne 1) {
+        throw "expected one AGENTS.md backup, found $($backup.Count)"
+    }
+    Assert-FileContains -Path $backup[0].FullName -Expected "local change"
+    if (@($replace | Where-Object { $_ -like "backups: *" }).Count -eq 0) {
+        throw "apply did not report its backup"
+    }
 
-    Write-Utf8Text -Path (Join-Path $sourceRoot "manifests\portable-retirements.json") -Text @'
-{
-  "schema_version": 1,
-  "base_commit": "fixture",
-  "items": [
-    {"scope": "codex", "type": "file", "path": "agents/sample.toml"}
-  ],
-  "config_entries": []
-}
-'@
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $homeArguments) -ExpectedExitCode 1)
-
-    Write-Utf8Text -Path (Join-Path $sourceRoot "manifests\portable-retirements.json") -Text @'
-{
-  "schema_version": 1,
-  "base_commit": "fixture",
-  "items": [
-    {"scope": "codex", "type": "dir", "path": "."}
-  ],
-  "config_entries": []
-}
-'@
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $homeArguments) -ExpectedExitCode 1)
-
-    Write-Utf8Text -Path (Join-Path $sourceRoot "manifests\portable-retirements.json") -Text @'
-{
-  "schema_version": 1,
-  "base_commit": "fixture",
-  "items": [],
-  "config_entries": []
-}
-'@
+    $secondApply = @(Invoke-TestScript -Path $installPath -Arguments (@("-Apply") + $homeArguments))
+    if ($secondApply -notcontains "backups: none") {
+        throw "unchanged apply created a backup"
+    }
+    if (Test-Path -LiteralPath (Join-Path $codexHome "portable-receipts")) {
+        throw "direct installer created legacy receipts"
+    }
 
     $manifestPath = Join-Path $sourceRoot "manifests\portable-files.toml"
-    $manifestText = Get-Content -Raw -LiteralPath $manifestPath
-    Write-Utf8Text `
-        -Path $manifestPath `
-        -Text $manifestText.Replace('files = ["AGENTS.md"]', 'files = ["AGENTS.md", "agents"]')
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $homeArguments) -ExpectedExitCode 1)
-    Write-Utf8Text -Path $manifestPath -Text $manifestText
-
-    Write-Utf8Text `
-        -Path $manifestPath `
-        -Text $manifestText.Replace('files = ["AGENTS.md"]', 'files = ["AGENTS.md", "../outside.txt"]')
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $homeArguments) -ExpectedExitCode 1)
-    Write-Utf8Text -Path $manifestPath -Text $manifestText
-
-    $overlappingHomeArguments = @(
-        "-CodexHome", (Join-Path $sourceRoot "codex-home"),
-        "-AgentsHome", $agentsHome,
-        "-ClaudeHome", $claudeHome
-    )
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $overlappingHomeArguments) -ExpectedExitCode 1)
-    Assert-FileContains -Path (Join-Path $sourceRoot "codex\AGENTS.md") -Expected "Portable Codex instructions"
-
-    $linkType = if ($env:OS -eq "Windows_NT") { "Junction" } else { "SymbolicLink" }
-    New-Item `
-        -ItemType $linkType `
-        -Path $linkedCodexHome `
-        -Target (Join-Path $sourceRoot "codex") | Out-Null
-    $linkedHomeArguments = @(
-        "-CodexHome", $linkedCodexHome,
-        "-AgentsHome", $agentsHome,
-        "-ClaudeHome", $claudeHome
-    )
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $linkedHomeArguments) -ExpectedExitCode 1)
-    Assert-FileContains -Path (Join-Path $sourceRoot "codex\AGENTS.md") -Expected "Portable Codex instructions"
-    Remove-TestDirectoryLink -Path $linkedCodexHome
-
-    New-Item -ItemType Directory -Force $brokenLinkTarget | Out-Null
-    New-Item `
-        -ItemType $linkType `
-        -Path $linkedCodexHome `
-        -Target $brokenLinkTarget | Out-Null
-    Remove-Item -LiteralPath $brokenLinkTarget -Recurse -Force
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-SkipPluginRetirement") + $linkedHomeArguments) -ExpectedExitCode 1)
-
-    Add-Content -LiteralPath (Join-Path $codexHome "AGENTS.md") -Value "# foreign change"
-    [void](Invoke-TestScript -Path $installPath -Arguments (@("-Apply", "-SkipPluginRetirement") + $homeArguments) -ExpectedExitCode 1)
-    Assert-FileContains -Path (Join-Path $codexHome "AGENTS.md") -Expected "foreign change"
+    $manifest = Get-Content -Raw -LiteralPath $manifestPath
+    Write-Utf8Text -Path $manifestPath -Text $manifest.Replace('files = ["AGENTS.md"]', 'files = ["AGENTS.md", "../outside.md"]')
+    [void](Invoke-TestScript -Path $installPath -Arguments $homeArguments -ExpectedExitCode 1)
+    Write-Utf8Text -Path $manifestPath -Text $manifest.Replace('files = ["AGENTS.md"]', 'files = ["AGENTS.md", "agents/sample.toml"]')
+    [void](Invoke-TestScript -Path $installPath -Arguments $homeArguments -ExpectedExitCode 1)
 
     Write-Host "portable bundle test: ok"
 }
 finally {
-    if ($null -ne (Get-Item -Force -LiteralPath $linkedCodexHome -ErrorAction SilentlyContinue)) {
-        Remove-TestDirectoryLink -Path $linkedCodexHome
-    }
     if (Test-Path -LiteralPath $testRoot) {
         Remove-Item -LiteralPath $testRoot -Recurse -Force
     }

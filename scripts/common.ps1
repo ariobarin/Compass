@@ -44,13 +44,6 @@ function Get-ClaudeHome {
 
 $script:PortablePythonRunner = $null
 $script:PortableGeneratedData = $null
-$script:PortableResolvedClaudeHome = $null
-$script:PortableRetirementManifest = $null
-
-# Maximum allowed length of a skill description, shared by the Codex and Claude
-# skill checks. test-compass-architecture.py asserts this equals its own
-# MAX_SKILL_DESCRIPTION_LENGTH constant.
-$script:MaxSkillDescriptionLength = 160
 
 function Get-PortablePythonRunner {
     if ($script:PortablePythonRunner) {
@@ -165,10 +158,6 @@ function Get-PortableSkillNames {
     return Get-PortableManifestArray -Section "agents" -Key "skills"
 }
 
-function Get-PortableStatefulSkillNames {
-    return Get-PortableManifestArray -Section "agents" -Key "stateful_skills"
-}
-
 function Get-PortableManifestArray {
     param(
         [string]$Section,
@@ -212,32 +201,7 @@ function Get-PortableClaudeDerivedAgentNames {
     return Get-PortableManifestArray -Section "claude" -Key "derived_agents"
 }
 
-function Get-PortableRetirementManifest {
-    if ($script:PortableRetirementManifest) {
-        return $script:PortableRetirementManifest
-    }
-
-    $path = Join-Path (Get-RepoRoot) "manifests\portable-retirements.json"
-    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-        throw "missing portable retirement manifest: $path"
-    }
-
-    try {
-        $manifest = Get-Content -Raw -LiteralPath $path | ConvertFrom-Json
-    }
-    catch {
-        throw "invalid portable retirement manifest: $($_.Exception.Message)"
-    }
-
-    if ($manifest.schema_version -ne 1) {
-        throw "unsupported portable retirement manifest schema version"
-    }
-
-    $script:PortableRetirementManifest = $manifest
-    return $manifest
-}
-
-# No active Claude agents are derived in the authored blank state.
+# Derived Claude agents use only the portable TOML fields.
 $script:ClaudeDerivedAgentFrontmatter = @{}
 
 function Get-TopLevelTomlStringValues {
@@ -389,30 +353,6 @@ function Assert-PortableRootsDisjoint {
     }
 }
 
-function Assert-PortableRelativePath {
-    param(
-        [string]$Path,
-        [string]$Context
-    )
-
-    if ([string]::IsNullOrWhiteSpace($Path)) {
-        throw "$Context must be a non-empty relative path"
-    }
-    $normalized = $Path.Replace("\", "/")
-    if (
-        [System.IO.Path]::IsPathRooted($Path) -or
-        $normalized.StartsWith("/") -or
-        $normalized -match "^[A-Za-z]:"
-    ) {
-        throw "$Context must be a relative path: $Path"
-    }
-    foreach ($part in $normalized.Split("/")) {
-        if ($part -in @("", ".", "..")) {
-            throw "$Context contains an unsafe path: $Path"
-        }
-    }
-}
-
 function Get-PortableFileMap {
     param(
         [string]$RepoRoot,
@@ -428,7 +368,6 @@ function Get-PortableFileMap {
     if (-not $ClaudeHome) {
         $ClaudeHome = Get-ClaudeHome
     }
-    $script:PortableResolvedClaudeHome = $ClaudeHome
     Assert-PortableRootsDisjoint `
         -RepoRoot $RepoRoot `
         -CodexHome $CodexHome `
@@ -460,10 +399,9 @@ function Get-PortableFileMap {
     # User skills follow the current user skill home. Project `.agents/skills`
     # stay with the target repo.
     $userSkillsHome = Join-Path $AgentsHome "skills"
-    $statefulSkills = @(Get-PortableStatefulSkillNames)
     foreach ($skill in Get-PortableSkillNames) {
         $items.Add([pscustomobject]@{
-            Type = if ($statefulSkills -contains $skill) { "stateful-dir" } else { "dir" }
+            Type = "dir"
             RepoPath = Join-Path (Join-Path (Join-Path $RepoRoot "codex") "skills") $skill
             LivePath = Join-Path $userSkillsHome $skill
             LiveRoot = $AgentsHome
@@ -530,90 +468,20 @@ function Get-PortableFileMap {
         Assert-PathUnderRoot -Path $item.RepoPath -Root $RepoRoot
         Assert-PathUnderRoot -Path $item.LivePath -Root $item.LiveRoot
     }
+    Assert-PortableTargetsDisjoint -Items $items
     return $items
 }
 
-function Get-RetiredPortableFileMap {
-    param(
-        [string]$CodexHome,
-        [string]$AgentsHome,
-        [string]$ClaudeHome
-    )
+function Assert-PortableTargetsDisjoint {
+    param([object[]]$Items)
 
-    $items = New-Object System.Collections.Generic.List[object]
-
-    if (-not $ClaudeHome) {
-        $ClaudeHome = Get-ClaudeHome
-    }
-    $roots = @{
-        codex = $CodexHome
-        agents = $AgentsHome
-        claude = $ClaudeHome
-    }
-    $retired = Get-PortableRetirementManifest
-    foreach ($entry in @($retired.items)) {
-        if ($entry.scope -notin @("codex", "agents", "claude")) {
-            throw "unsupported portable retirement scope: $($entry.scope)"
-        }
-        if ($entry.type -notin @("file", "dir")) {
-            throw "unsupported portable retirement type: $($entry.type)"
-        }
-        Assert-PortableRelativePath `
-            -Path ([string]$entry.path) `
-            -Context "portable retirement path"
-        $root = $roots[[string]$entry.scope]
-        $livePath = Join-Path $root ([string]$entry.path)
-        Assert-PathUnderRoot -Path $livePath -Root $root
-        $items.Add([pscustomobject]@{
-            Type = [string]$entry.type
-            LivePath = $livePath
-            LiveRoot = $root
-            BackupScope = [string]$entry.scope
-        })
-    }
-
-    return $items
-}
-
-function Assert-PortableTargetSetsDisjoint {
-    param(
-        [object[]]$ActiveItems,
-        [object[]]$RetiredItems
-    )
-
-    $sets = @(
-        [pscustomobject]@{ Name = "active"; Items = @($ActiveItems) }
-        [pscustomobject]@{ Name = "retired"; Items = @($RetiredItems) }
-    )
-    foreach ($set in $sets) {
-        $setItems = @($set.Items)
-        for ($leftIndex = 0; $leftIndex -lt $setItems.Count; $leftIndex++) {
-            $left = $setItems[$leftIndex]
-            if ($null -eq $left) {
-                continue
-            }
-            for ($rightIndex = $leftIndex + 1; $rightIndex -lt $setItems.Count; $rightIndex++) {
-                $right = $setItems[$rightIndex]
-                if (
-                    $null -ne $right -and
-                    (Test-PortablePathsOverlap -Left $left.LivePath -Right $right.LivePath)
-                ) {
-                    throw "portable $($set.Name) targets overlap: $($left.LivePath) and $($right.LivePath)"
-                }
-            }
-        }
-    }
-
-    foreach ($active in @($ActiveItems)) {
-        if ($null -eq $active) {
-            continue
-        }
-        foreach ($retired in @($RetiredItems)) {
-            if (
-                $null -ne $retired -and
-                (Test-PortablePathsOverlap -Left $active.LivePath -Right $retired.LivePath)
-            ) {
-                throw "portable targets cannot be both active and retired: $($active.LivePath) and $($retired.LivePath)"
+    $targets = @($Items)
+    for ($leftIndex = 0; $leftIndex -lt $targets.Count; $leftIndex++) {
+        for ($rightIndex = $leftIndex + 1; $rightIndex -lt $targets.Count; $rightIndex++) {
+            $left = $targets[$leftIndex]
+            $right = $targets[$rightIndex]
+            if (Test-PortablePathsOverlap -Left $left.LivePath -Right $right.LivePath) {
+                throw "portable targets overlap: $($left.LivePath) and $($right.LivePath)"
             }
         }
     }
@@ -641,7 +509,7 @@ function Backup-LiveItem {
     }
     $backupPath = Join-Path $backupBase $relative
 
-    if ($Type -in @("dir", "stateful-dir", "derived-skill")) {
+    if ($Type -in @("dir", "derived-skill")) {
         New-Item -ItemType Directory -Force (Split-Path -Parent $backupPath) | Out-Null
         Copy-Item -LiteralPath $LivePath -Destination $backupPath -Recurse -Force
         return
@@ -656,8 +524,7 @@ function Copy-PortableItem {
         [string]$Source,
         [string]$Destination,
         [string]$Type,
-        [string]$AllowedRoot,
-        [switch]$SkipRuntimeBootstrap
+        [string]$AllowedRoot
     )
 
     if (-not (Test-Path $Source)) {
@@ -666,40 +533,6 @@ function Copy-PortableItem {
 
     if ($AllowedRoot) {
         Assert-PathUnderRoot -Path $Destination -Root $AllowedRoot
-    }
-
-    if ($Type -eq "stateful-dir") {
-        $destinationExisted = Test-Path -LiteralPath $Destination -PathType Container
-        New-Item -ItemType Directory -Force $Destination | Out-Null
-
-        $sourceRoot = (Resolve-Path -LiteralPath $Source).Path
-        $destinationRoot = (Resolve-Path -LiteralPath $Destination).Path
-        $sourceMap = Get-PortableDirectoryFileMap -Root $Source -Stateful
-        $destinationMap = Get-PortableDirectoryFileMap -Root $Destination -Stateful
-
-        foreach ($relative in $sourceMap.Keys) {
-            $sourcePath = Join-Path $sourceRoot $relative
-            $destinationPath = Join-Path $destinationRoot $relative
-            New-DirectoryForFile -Path $destinationPath
-            Copy-Item -LiteralPath $sourcePath -Destination $destinationPath -Force
-        }
-
-        foreach ($relative in $destinationMap.Keys) {
-            if ($sourceMap.ContainsKey($relative)) {
-                continue
-            }
-            $obsoletePath = Join-Path $destinationRoot $relative
-            Assert-PathUnderRoot -Path $obsoletePath -Root $destinationRoot
-            Remove-Item -LiteralPath $obsoletePath -Force
-        }
-
-        if (-not $destinationExisted -and -not $SkipRuntimeBootstrap) {
-            $sourceArtifacts = Join-Path $sourceRoot "artifacts"
-            if (Test-Path -LiteralPath $sourceArtifacts -PathType Container) {
-                Copy-Item -LiteralPath $sourceArtifacts -Destination (Join-Path $destinationRoot "artifacts") -Recurse -Force
-            }
-        }
-        return
     }
 
     if ($Type -eq "dir") {
@@ -759,25 +592,10 @@ function Copy-PortableItem {
     Copy-Item -LiteralPath $Source -Destination $Destination -Force
 }
 
-function Test-PortableRuntimePath {
-    param([string]$RelativePath)
-
-    $normalized = $RelativePath.Replace("\", "/").TrimStart("/")
-    if ($normalized -eq "artifacts" -or $normalized.StartsWith("artifacts/", [System.StringComparison]::OrdinalIgnoreCase)) {
-        return $true
-    }
-    if ($normalized -match '(^|/)__pycache__(/|$)') {
-        return $true
-    }
-    return $normalized.EndsWith(".pyc", [System.StringComparison]::OrdinalIgnoreCase) -or
-        $normalized.EndsWith(".pyo", [System.StringComparison]::OrdinalIgnoreCase)
-}
-
 function Get-PortableDirectoryFileMap {
     param(
         [string]$Root,
-        [switch]$DerivedSkill,
-        [switch]$Stateful
+        [switch]$DerivedSkill
     )
 
     $map = @{}
@@ -808,10 +626,73 @@ function Get-PortableDirectoryFileMap {
     $resolvedRoot = (Resolve-Path -LiteralPath $Root).Path
     foreach ($file in $files) {
         $relative = $file.FullName.Substring($resolvedRoot.Length).TrimStart("\", "/")
-        if ($Stateful -and (Test-PortableRuntimePath -RelativePath $relative)) {
-            continue
-        }
         $map[$relative] = (Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName).Hash
     }
     return $map
+}
+
+function Test-PortableFileMapsEqual {
+    param(
+        [hashtable]$Expected,
+        [hashtable]$Actual
+    )
+
+    if ($Expected.Count -ne $Actual.Count) {
+        return $false
+    }
+    foreach ($key in $Expected.Keys) {
+        if (-not $Actual.ContainsKey($key) -or $Expected[$key] -ne $Actual[$key]) {
+            return $false
+        }
+    }
+    return $true
+}
+
+function Test-PortableItemInSync {
+    param([object]$Item)
+
+    if (-not (Test-Path -LiteralPath $Item.RepoPath)) {
+        throw "missing portable source: $($Item.RepoPath)"
+    }
+    if (-not (Test-Path -LiteralPath $Item.LivePath)) {
+        return $false
+    }
+
+    if ($Item.Type -eq "file") {
+        if (-not (Test-Path -LiteralPath $Item.LivePath -PathType Leaf)) {
+            return $false
+        }
+        $sourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Item.RepoPath).Hash
+        $liveHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Item.LivePath).Hash
+        return $sourceHash -eq $liveHash
+    }
+
+    if ($Item.Type -eq "derived-agent") {
+        if (-not (Test-Path -LiteralPath $Item.LivePath -PathType Leaf)) {
+            return $false
+        }
+        $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) "compass-derived-$([guid]::NewGuid().ToString('N'))"
+        $tempFile = Join-Path $tempRoot "agent.md"
+        try {
+            New-Item -ItemType Directory -Force $tempRoot | Out-Null
+            Copy-PortableItem -Source $Item.RepoPath -Destination $tempFile -Type $Item.Type -AllowedRoot $tempRoot
+            $sourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $tempFile).Hash
+            $liveHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Item.LivePath).Hash
+            return $sourceHash -eq $liveHash
+        }
+        finally {
+            if (Test-Path -LiteralPath $tempRoot) {
+                Remove-Item -LiteralPath $tempRoot -Recurse -Force
+            }
+        }
+    }
+
+    if (-not (Test-Path -LiteralPath $Item.LivePath -PathType Container)) {
+        return $false
+    }
+    $expected = Get-PortableDirectoryFileMap `
+        -Root $Item.RepoPath `
+        -DerivedSkill:($Item.Type -eq "derived-skill")
+    $actual = Get-PortableDirectoryFileMap -Root $Item.LivePath
+    return Test-PortableFileMapsEqual -Expected $expected -Actual $actual
 }
