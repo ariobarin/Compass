@@ -1,7 +1,8 @@
 # Compass
 
-Compass is reviewed source for portable Codex and Claude Code instructions,
-skills, and agents. The current bundle is intentionally blank.
+Compass is reviewed source for portable Codex and Claude Code configuration,
+instructions, skills, and agents. The current bundle contains portable Codex
+defaults and no active skills or agents.
 
 It is an allowlist, not a runtime-home backup. Auth, sessions, logs, caches,
 databases, browser state, generated plugins, and machine-only values stay local.
@@ -11,6 +12,8 @@ databases, browser state, generated plugins, and machine-only values stay local.
 `manifests/portable-files.json` selects the current bundle:
 
 - `codex.files` installs files from `codex/` into the Codex home.
+- `codex.config` overlays reviewed keys from `codex/config.toml` while keeping
+  unlisted live configuration intact.
 - `codex.agents` installs selected `codex/agents/<name>.toml` subagents without
   copying repository documentation.
 - `agents.skills` installs `codex/skills/<name>/` into `$HOME/.agents/skills`.
@@ -18,9 +21,10 @@ databases, browser state, generated plugins, and machine-only values stay local.
   definitions.
 
 `codex/AGENTS.md` remains as the permanent global instruction source, with no
-active instructions. `codex/skills/` and `codex/agents/` remain as permanent
-portable source surfaces. Their active collections are empty until a reviewed
-change adds a definition and its manifest entry.
+active instructions. `codex/config.toml` carries durable global defaults while
+machine paths, generated plugin state, project trust, and app-local settings
+stay in the live file. Skill and agent collections remain empty until a
+reviewed change adds a definition and its manifest entry.
 
 ## Commands
 

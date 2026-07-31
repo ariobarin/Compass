@@ -1,12 +1,15 @@
 # Repository Guidance
 
 Compass is the lean source of truth for portable Codex and Claude Code
-configuration. The current bundle is intentionally blank.
+configuration. The current bundle contains reviewed Codex defaults and no
+active skills or agents.
 
 ## Boundaries
 
 - `codex/AGENTS.md` is the permanent global Codex instruction source. It may be
   empty, but the source path stays in Compass.
+- `codex/config.toml` contains reviewed portable keys. Install overlays those
+  keys without replacing unrelated live configuration.
 - Portable skills belong under `codex/skills/<name>/` and are selected by
   `agents.skills` in `manifests/portable-files.json`.
 - Portable Codex subagents belong under `codex/agents/<name>.toml` and are

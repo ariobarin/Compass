@@ -137,6 +137,23 @@ function Assert-PortableObjectShape {
     }
 }
 
+function Assert-PortableManifestString {
+    param(
+        [object]$Section,
+        [string]$SectionName,
+        [string]$Key
+    )
+
+    $value = Get-PortableJsonProperty -Object $Section -Name $Key
+    if ($value -isnot [string]) {
+        throw "portable manifest $SectionName.$Key must be a string"
+    }
+    Assert-PortableRelativePath `
+        -Value $value `
+        -Context "portable manifest $SectionName.$Key" `
+        -SingleName
+}
+
 function Get-PortableManifest {
     if ($script:PortableManifest) {
         return $script:PortableManifest
@@ -161,10 +178,11 @@ function Get-PortableManifest {
     $codex = Get-PortableJsonProperty -Object $manifest -Name "codex"
     $agents = Get-PortableJsonProperty -Object $manifest -Name "agents"
     $claude = Get-PortableJsonProperty -Object $manifest -Name "claude"
-    Assert-PortableObjectShape -Object $codex -Context "codex" -AllowedProperties @("files", "agents")
+    Assert-PortableObjectShape -Object $codex -Context "codex" -AllowedProperties @("config", "files", "agents")
     Assert-PortableObjectShape -Object $agents -Context "agents" -AllowedProperties @("skills")
     Assert-PortableObjectShape -Object $claude -Context "claude" -AllowedProperties @("files", "skills", "agents")
 
+    Assert-PortableManifestString -Section $codex -SectionName "codex" -Key "config"
     Assert-PortableManifestArray -Section $codex -SectionName "codex" -Key "files"
     Assert-PortableManifestArray -Section $codex -SectionName "codex" -Key "agents" -SingleName
     Assert-PortableManifestArray -Section $agents -SectionName "agents" -Key "skills" -SingleName
@@ -185,6 +203,17 @@ function Get-PortableManifestArray {
     $manifest = Get-PortableManifest
     $sectionValue = Get-PortableJsonProperty -Object $manifest -Name $Section
     return @(Get-PortableJsonProperty -Object $sectionValue -Name $Key)
+}
+
+function Get-PortableManifestString {
+    param(
+        [string]$Section,
+        [string]$Key
+    )
+
+    $manifest = Get-PortableManifest
+    $sectionValue = Get-PortableJsonProperty -Object $manifest -Name $Section
+    return [string](Get-PortableJsonProperty -Object $sectionValue -Name $Key)
 }
 
 function New-DirectoryForFile {
@@ -384,6 +413,11 @@ function Get-PortableFileMap {
         -ClaudeHome $ClaudeHome
 
     $items = New-Object System.Collections.Generic.List[object]
+    $config = Get-PortableManifestString -Section "codex" -Key "config"
+    Add-PortableItem -Items $items -Type "config" `
+        -RepoPath (Join-Path $RepoRoot "codex\$config") `
+        -LivePath (Join-Path $CodexHome "config.toml") `
+        -LiveRoot $CodexHome -BackupScope "codex"
     foreach ($relative in Get-PortableManifestArray -Section "codex" -Key "files") {
         Add-PortableItem -Items $items -Type "file" `
             -RepoPath (Join-Path (Join-Path $RepoRoot "codex") $relative) `
@@ -477,6 +511,149 @@ function Backup-LiveItem {
     Copy-Item -LiteralPath $LivePath -Destination $backupPath -Force
 }
 
+function Get-PortableConfigEntries {
+    param([string]$Path)
+
+    $entries = New-Object System.Collections.Generic.List[object]
+    $section = ""
+    $seen = @{}
+    foreach ($line in Get-Content -LiteralPath $Path) {
+        $trimmed = $line.Trim()
+        if (-not $trimmed -or $trimmed.StartsWith("#")) {
+            continue
+        }
+        if ($trimmed -match '^\[([A-Za-z0-9_.-]+)\]$') {
+            $section = $Matches[1]
+            continue
+        }
+        if ($line -notmatch '^\s*([A-Za-z0-9_.-]+)\s*=\s*(.+?)\s*$') {
+            throw "portable config supports only scalar keys: $line"
+        }
+        $key = $Matches[1]
+        $value = $Matches[2]
+        $identity = "$section`n$key"
+        if ($seen.ContainsKey($identity)) {
+            throw "portable config contains duplicate key: $identity"
+        }
+        $seen[$identity] = $true
+        $entries.Add([pscustomobject]@{
+            Section = $section
+            Key = $key
+            Value = $value
+        })
+    }
+    return $entries
+}
+
+function Get-LiveConfigValueMap {
+    param([string]$Path)
+
+    $values = @{}
+    $section = ""
+    foreach ($line in Get-Content -LiteralPath $Path) {
+        if ($line -match '^\s*\[(.+)\]\s*(?:#.*)?$') {
+            $section = $Matches[1]
+            continue
+        }
+        if ($line -match '^\s*([A-Za-z0-9_.-]+)\s*=\s*(.+?)\s*$') {
+            $values["$section`n$($Matches[1])"] = $Matches[2]
+        }
+    }
+    return $values
+}
+
+function Merge-PortableConfig {
+    param(
+        [string]$Source,
+        [string]$Destination
+    )
+
+    $entries = @(Get-PortableConfigEntries -Path $Source)
+    if (-not (Test-Path -LiteralPath $Destination -PathType Leaf)) {
+        New-DirectoryForFile -Path $Destination
+        Copy-Item -LiteralPath $Source -Destination $Destination -Force
+        return
+    }
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    foreach ($line in Get-Content -LiteralPath $Destination) {
+        $lines.Add($line)
+    }
+    foreach ($entry in $entries) {
+        $start = 0
+        $end = $lines.Count
+        if ($entry.Section) {
+            $start = -1
+            for ($index = 0; $index -lt $lines.Count; $index++) {
+                if ($lines[$index] -match '^\s*\[(.+)\]\s*(?:#.*)?$') {
+                    if ($start -ge 0) {
+                        $end = $index
+                        break
+                    }
+                    if ($Matches[1] -eq $entry.Section) {
+                        $start = $index + 1
+                    }
+                }
+            }
+            if ($start -lt 0) {
+                if ($lines.Count -gt 0 -and $lines[$lines.Count - 1].Trim()) {
+                    $lines.Add("")
+                }
+                $lines.Add("[$($entry.Section)]")
+                $lines.Add("$($entry.Key) = $($entry.Value)")
+                continue
+            }
+        }
+        else {
+            for ($index = 0; $index -lt $lines.Count; $index++) {
+                if ($lines[$index] -match '^\s*\[') {
+                    $end = $index
+                    break
+                }
+            }
+        }
+
+        $found = $false
+        for ($index = $start; $index -lt $end; $index++) {
+            if ($lines[$index] -match '^\s*([A-Za-z0-9_.-]+)\s*=') {
+                if ($Matches[1] -eq $entry.Key) {
+                    $lines[$index] = "$($entry.Key) = $($entry.Value)"
+                    $found = $true
+                    break
+                }
+            }
+        }
+        if (-not $found) {
+            $lines.Insert($end, "$($entry.Key) = $($entry.Value)")
+        }
+    }
+    $content = ($lines -join "`n").TrimEnd() + "`n"
+    [System.IO.File]::WriteAllText(
+        $Destination,
+        $content,
+        [System.Text.UTF8Encoding]::new($false)
+    )
+}
+
+function Test-PortableConfigInSync {
+    param(
+        [string]$Source,
+        [string]$Destination
+    )
+
+    if (-not (Test-Path -LiteralPath $Destination -PathType Leaf)) {
+        return $false
+    }
+    $live = Get-LiveConfigValueMap -Path $Destination
+    foreach ($entry in Get-PortableConfigEntries -Path $Source) {
+        $identity = "$($entry.Section)`n$($entry.Key)"
+        if (-not $live.ContainsKey($identity) -or $live[$identity] -ne $entry.Value) {
+            return $false
+        }
+    }
+    return $true
+}
+
 function Copy-PortableItem {
     param(
         [string]$Source,
@@ -505,6 +682,10 @@ function Copy-PortableItem {
         Remove-Item -LiteralPath $Destination -Recurse -Force
     }
     New-DirectoryForFile -Path $Destination
+    if ($Type -eq "config") {
+        Merge-PortableConfig -Source $Source -Destination $Destination
+        return
+    }
     Copy-Item -LiteralPath $Source -Destination $Destination -Force
 }
 
@@ -550,6 +731,11 @@ function Test-PortableItemInSync {
     }
     if (-not (Test-Path -LiteralPath $Item.LivePath)) {
         return $false
+    }
+    if ($Item.Type -eq "config") {
+        return Test-PortableConfigInSync `
+            -Source $Item.RepoPath `
+            -Destination $Item.LivePath
     }
     if ($Item.Type -eq "file") {
         if (-not (Test-Path -LiteralPath $Item.LivePath -PathType Leaf)) {

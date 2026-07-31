@@ -1,5 +1,6 @@
 {
   "codex": {
+    "config": "config.toml",
     "files": [
       "AGENTS.md"
     ],

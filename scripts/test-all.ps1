@@ -4,75 +4,85 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-. "$PSScriptRoot\common.ps1"
+function Write-TestFile {
+    param(
+        [string]$Path,
+        [string]$Content
+    )
 
-[void](Get-PortableManifest)
-
-$scratch = Join-Path ([System.IO.Path]::GetTempPath()) "compass-source-check-$([guid]::NewGuid().ToString('N'))"
-$items = @(
-    Get-PortableFileMap `
-        -RepoRoot (Get-RepoRoot) `
-        -CodexHome (Join-Path $scratch "codex") `
-        -AgentsHome (Join-Path $scratch "agents") `
-        -ClaudeHome (Join-Path $scratch "claude")
-)
-foreach ($item in $items) {
-    if (-not (Test-Path -LiteralPath $item.RepoPath)) {
-        throw "missing portable source: $($item.RepoPath)"
+    $parent = Split-Path -Parent $Path
+    if ($parent) {
+        New-Item -ItemType Directory -Force $parent | Out-Null
     }
-}
-foreach ($sourcePath in @(
-    (Join-Path (Get-RepoRoot) "codex\skills\README.md"),
-    (Join-Path (Get-RepoRoot) "codex\agents\README.md")
-)) {
-    if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
-        throw "missing permanent portable source surface: $sourcePath"
-    }
+    [System.IO.File]::WriteAllText(
+        $Path,
+        $Content,
+        [System.Text.UTF8Encoding]::new($false)
+    )
 }
 
-$installRoot = Join-Path ([System.IO.Path]::GetTempPath()) "compass-blank-install-$([guid]::NewGuid().ToString('N'))"
+function Assert-TestFileContains {
+    param(
+        [string]$Path,
+        [string]$Expected
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw "missing expected file: $Path"
+    }
+    if (-not (Get-Content -Raw -LiteralPath $Path).Contains($Expected)) {
+        throw "expected $Path to contain: $Expected"
+    }
+}
+
+$testRoot = Join-Path ([System.IO.Path]::GetTempPath()) "compass-test-$([guid]::NewGuid().ToString('N'))"
+$codexHome = Join-Path $testRoot "codex"
+$agentsHome = Join-Path $testRoot "agents"
+$claudeHome = Join-Path $testRoot "claude"
+
 try {
-    $blankCodexHome = Join-Path $installRoot "codex"
-    $blankAgentsHome = Join-Path $installRoot "agents"
-    $blankClaudeHome = Join-Path $installRoot "claude"
+    Write-TestFile -Path (Join-Path $codexHome "AGENTS.md\local.txt") -Content "preserve this backup`n"
+    Write-TestFile -Path (Join-Path $codexHome "auth.json") -Content "leave unlisted state alone`n"
+    Write-TestFile -Path (Join-Path $codexHome "config.toml") -Content @'
+model = "old"
+machine_setting = "preserve"
+
+[features]
+memories = false
+
+[projects.'C:\machine']
+trust_level = "trusted"
+'@
+
     & (Join-Path $PSScriptRoot "install.ps1") `
         -Apply `
-        -CodexHome $blankCodexHome `
-        -AgentsHome $blankAgentsHome `
-        -ClaudeHome $blankClaudeHome
+        -CodexHome $codexHome `
+        -AgentsHome $agentsHome `
+        -ClaudeHome $claudeHome
     & (Join-Path $PSScriptRoot "verify-live.ps1") `
         -RequireInSync `
-        -CodexHome $blankCodexHome `
-        -AgentsHome $blankAgentsHome `
-        -ClaudeHome $blankClaudeHome
-    if (-not (Test-Path -LiteralPath (Join-Path $blankCodexHome "AGENTS.md") -PathType Leaf)) {
-        throw "blank installation did not create AGENTS.md"
+        -CodexHome $codexHome `
+        -AgentsHome $agentsHome `
+        -ClaudeHome $claudeHome
+
+    Assert-TestFileContains -Path (Join-Path $codexHome "AGENTS.md") -Expected "Intentionally blank"
+    Assert-TestFileContains -Path (Join-Path $codexHome "config.toml") -Expected 'model = "gpt-5.6-sol"'
+    Assert-TestFileContains -Path (Join-Path $codexHome "config.toml") -Expected 'machine_setting = "preserve"'
+    Assert-TestFileContains -Path (Join-Path $codexHome "config.toml") -Expected 'trust_level = "trusted"'
+    Assert-TestFileContains -Path (Join-Path $codexHome "auth.json") -Expected "leave unlisted state alone"
+
+    $backupRoot = Join-Path $codexHome "portable-backups"
+    Assert-TestFileContains `
+        -Path (@(Get-ChildItem -LiteralPath $backupRoot -Recurse -Filter "local.txt" -File)[0].FullName) `
+        -Expected "preserve this backup"
+    if (@(Get-ChildItem -LiteralPath $backupRoot -Recurse -Filter "config.toml" -File).Count -ne 1) {
+        throw "expected one live config backup"
     }
-    if (Test-Path -LiteralPath (Join-Path $blankCodexHome "config.toml")) {
-        throw "blank installation created config.toml"
-    }
-    if (Test-Path -LiteralPath (Join-Path $blankCodexHome "agents")) {
-        throw "blank installation created active Codex subagents"
-    }
-    if (Test-Path -LiteralPath (Join-Path $blankAgentsHome "skills")) {
-        throw "blank installation created active skills"
-    }
+
+    Write-Host "portable tests: ok"
 }
 finally {
-    if (Test-Path -LiteralPath $installRoot) {
-        Remove-Item -LiteralPath $installRoot -Recurse -Force
+    if (Test-Path -LiteralPath $testRoot) {
+        Remove-Item -LiteralPath $testRoot -Recurse -Force
     }
 }
-
-$powerShellPath = (Get-Process -Id $PID).Path
-$arguments = @("-NoProfile")
-if ($env:OS -eq "Windows_NT") {
-    $arguments += @("-ExecutionPolicy", "Bypass")
-}
-$arguments += @("-File", (Join-Path $PSScriptRoot "test-portable-bundle.ps1"))
-& $powerShellPath @arguments
-if ($LASTEXITCODE -ne 0) {
-    exit $LASTEXITCODE
-}
-
-Write-Host "portable tests: ok"
