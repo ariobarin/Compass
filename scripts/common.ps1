@@ -11,13 +11,12 @@ function Get-CodexHome {
     if ($CodexHome) {
         return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($CodexHome)
     }
-
     if ($env:CODEX_HOME) {
         return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($env:CODEX_HOME)
     }
-
-    $default = Join-Path $env:USERPROFILE ".codex"
-    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($default)
+    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(
+        (Join-Path $env:USERPROFILE ".codex")
+    )
 }
 
 function Get-AgentsHome {
@@ -26,9 +25,9 @@ function Get-AgentsHome {
     if ($AgentsHome) {
         return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($AgentsHome)
     }
-
-    $default = Join-Path $HOME ".agents"
-    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($default)
+    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(
+        (Join-Path $HOME ".agents")
+    )
 }
 
 function Get-ClaudeHome {
@@ -37,106 +36,12 @@ function Get-ClaudeHome {
     if ($ClaudeHome) {
         return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ClaudeHome)
     }
-
-    $default = Join-Path $HOME ".claude"
-    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($default)
-}
-
-$script:PortablePythonRunner = $null
-$script:PortableGeneratedData = $null
-
-function Get-PortablePythonRunner {
-    if ($script:PortablePythonRunner) {
-        return $script:PortablePythonRunner
-    }
-
-    $candidates = @(
-        [pscustomobject]@{ Command = "py"; Prefix = @("-3") }
-        [pscustomobject]@{ Command = "python"; Prefix = @() }
-        [pscustomobject]@{ Command = "python3"; Prefix = @() }
+    return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(
+        (Join-Path $HOME ".claude")
     )
-
-    foreach ($candidate in $candidates) {
-        if (-not (Get-Command $candidate.Command -ErrorAction SilentlyContinue)) {
-            continue
-        }
-
-        $runnerWorks = $false
-        try {
-            & $candidate.Command @($candidate.Prefix) -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)" *> $null
-            $runnerWorks = $LASTEXITCODE -eq 0
-        }
-        catch {
-            $runnerWorks = $false
-        }
-        if ($runnerWorks) {
-            $script:PortablePythonRunner = $candidate
-            return $candidate
-        }
-    }
-
-    throw "Python 3.11 or newer is required to parse portable TOML"
 }
 
-function Invoke-PortableTomlParser {
-    param(
-        [string[]]$Arguments,
-        [AllowNull()]
-        [string]$InputText
-    )
-
-    $parserPath = Join-Path (Get-RepoRoot) "scripts\portable-data.py"
-    if (-not (Test-Path -LiteralPath $parserPath)) {
-        throw "missing portable TOML parser: $parserPath"
-    }
-
-    $runner = Get-PortablePythonRunner
-    $commandArguments = @($runner.Prefix) + @($parserPath) + @($Arguments)
-    $previousPythonIoEncoding = $env:PYTHONIOENCODING
-    $previousOutputEncoding = [Console]::OutputEncoding
-
-    try {
-        $env:PYTHONIOENCODING = "utf-8"
-        [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
-        if ($PSBoundParameters.ContainsKey("InputText")) {
-            $output = @($InputText | & $runner.Command @commandArguments 2>&1)
-        }
-        else {
-            $output = @(& $runner.Command @commandArguments 2>&1)
-        }
-        $exitCode = $LASTEXITCODE
-    }
-    finally {
-        $env:PYTHONIOENCODING = $previousPythonIoEncoding
-        [Console]::OutputEncoding = $previousOutputEncoding
-    }
-
-    if ($exitCode -ne 0) {
-        $message = @($output | ForEach-Object { $_.ToString() }) -join "`n"
-        throw "portable TOML parser failed: $message"
-    }
-
-    return [string](@($output | ForEach-Object { $_.ToString() }) -join "`n")
-}
-
-function Get-PortableGeneratedData {
-    if ($script:PortableGeneratedData) {
-        return $script:PortableGeneratedData
-    }
-
-    $json = Invoke-PortableTomlParser -Arguments @("--root", (Get-RepoRoot))
-    try {
-        $script:PortableGeneratedData = $json | ConvertFrom-Json
-    }
-    catch {
-        throw "portable TOML parser returned invalid JSON: $($_.Exception.Message)"
-    }
-
-    if ($script:PortableGeneratedData.schema_version -ne 1) {
-        throw "unsupported portable data schema version"
-    }
-    return $script:PortableGeneratedData
-}
+$script:PortableManifest = $null
 
 function Get-PortableJsonProperty {
     param(
@@ -154,98 +59,140 @@ function Get-PortableJsonProperty {
     return $property.Value
 }
 
-function Get-PortableSkillNames {
-    return Get-PortableManifestArray -Section "agents" -Key "skills"
+function Assert-PortableRelativePath {
+    param(
+        [string]$Value,
+        [string]$Context,
+        [switch]$SingleName
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        throw "$Context entries must be non-empty strings"
+    }
+    $normalized = $Value.Replace("\", "/")
+    if (
+        [System.IO.Path]::IsPathRooted($normalized) -or
+        $normalized -match '^[A-Za-z]:'
+    ) {
+        throw "$Context must contain relative paths: $Value"
+    }
+    $parts = @($normalized.Split("/"))
+    if (@($parts | Where-Object { $_ -in @("", ".", "..") }).Count -gt 0) {
+        throw "$Context contains an unsafe path: $Value"
+    }
+    if ($SingleName -and $parts.Count -ne 1) {
+        throw "$Context entries must be one path name: $Value"
+    }
 }
 
-function Get-PortableCodexAgentNames {
-    return Get-PortableManifestArray -Section "codex" -Key "agents"
+function Assert-PortableManifestArray {
+    param(
+        [object]$Section,
+        [string]$SectionName,
+        [string]$Key,
+        [switch]$SingleName
+    )
+
+    $property = $Section.PSObject.Properties[$Key]
+    if ($null -eq $property) {
+        throw "portable manifest requires $SectionName.$Key"
+    }
+    $value = $property.Value
+    if ($value -isnot [System.Array]) {
+        throw "portable manifest $SectionName.$Key must be a string array"
+    }
+    $items = @($value)
+    $seen = @{}
+    foreach ($item in $items) {
+        if ($item -isnot [string]) {
+            throw "portable manifest $SectionName.$Key must be a string array"
+        }
+        Assert-PortableRelativePath `
+            -Value $item `
+            -Context "portable manifest $SectionName.$Key" `
+            -SingleName:$SingleName
+        if ($seen.ContainsKey($item)) {
+            throw "portable manifest $SectionName.$Key contains duplicates"
+        }
+        $seen[$item] = $true
+    }
+}
+
+function Assert-PortableObjectShape {
+    param(
+        [object]$Object,
+        [string]$Context,
+        [string[]]$AllowedProperties
+    )
+
+    if ($null -eq $Object -or $Object -isnot [pscustomobject]) {
+        throw "portable manifest requires $Context object"
+    }
+    $unknown = @(
+        $Object.PSObject.Properties.Name |
+            Where-Object { $_ -notin $AllowedProperties }
+    )
+    if ($unknown.Count -gt 0) {
+        throw "$Context contains unsupported properties: $($unknown -join ', ')"
+    }
+}
+
+function Get-PortableManifest {
+    if ($script:PortableManifest) {
+        return $script:PortableManifest
+    }
+
+    $path = Join-Path (Get-RepoRoot) "manifests\portable-files.json"
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        throw "missing portable manifest: $path"
+    }
+    try {
+        $manifest = Get-Content -Raw -LiteralPath $path | ConvertFrom-Json
+    }
+    catch {
+        throw "invalid portable manifest JSON: $($_.Exception.Message)"
+    }
+
+    Assert-PortableObjectShape `
+        -Object $manifest `
+        -Context "root" `
+        -AllowedProperties @("codex", "agents", "claude")
+
+    $codex = Get-PortableJsonProperty -Object $manifest -Name "codex"
+    $agents = Get-PortableJsonProperty -Object $manifest -Name "agents"
+    $claude = Get-PortableJsonProperty -Object $manifest -Name "claude"
+    Assert-PortableObjectShape -Object $codex -Context "codex" -AllowedProperties @("files", "agents")
+    Assert-PortableObjectShape -Object $agents -Context "agents" -AllowedProperties @("skills")
+    Assert-PortableObjectShape -Object $claude -Context "claude" -AllowedProperties @("files", "skills", "agents")
+
+    Assert-PortableManifestArray -Section $codex -SectionName "codex" -Key "files"
+    Assert-PortableManifestArray -Section $codex -SectionName "codex" -Key "agents" -SingleName
+    Assert-PortableManifestArray -Section $agents -SectionName "agents" -Key "skills" -SingleName
+    Assert-PortableManifestArray -Section $claude -SectionName "claude" -Key "files"
+    Assert-PortableManifestArray -Section $claude -SectionName "claude" -Key "skills" -SingleName
+    Assert-PortableManifestArray -Section $claude -SectionName "claude" -Key "agents" -SingleName
+
+    $script:PortableManifest = $manifest
+    return $script:PortableManifest
 }
 
 function Get-PortableManifestArray {
     param(
         [string]$Section,
-        [string]$Key,
-        [string]$Text
+        [string]$Key
     )
 
-    if ($PSBoundParameters.ContainsKey("Text")) {
-        $json = Invoke-PortableTomlParser -Arguments @("--stdin") -InputText $Text
-        $manifest = $json | ConvertFrom-Json
-    }
-    else {
-        $manifest = (Get-PortableGeneratedData).manifest
-    }
-
+    $manifest = Get-PortableManifest
     $sectionValue = Get-PortableJsonProperty -Object $manifest -Name $Section
-    $keyValue = Get-PortableJsonProperty -Object $sectionValue -Name $Key
-    if ($null -eq $keyValue) {
-        return @()
-    }
-    return @($keyValue)
-}
-
-function Get-PortableClaudeFileNames {
-    return Get-PortableManifestArray -Section "claude" -Key "files"
-}
-
-function Get-PortableClaudeSkillNames {
-    return Get-PortableManifestArray -Section "claude" -Key "skills"
-}
-
-function Get-PortableClaudeDerivedSkillNames {
-    return Get-PortableManifestArray -Section "claude" -Key "derived_skills"
-}
-
-function Get-PortableClaudeAgentNames {
-    return Get-PortableManifestArray -Section "claude" -Key "agents"
-}
-
-function Get-PortableClaudeDerivedAgentNames {
-    return Get-PortableManifestArray -Section "claude" -Key "derived_agents"
-}
-
-# Derived Claude agents use only the portable TOML fields.
-$script:ClaudeDerivedAgentFrontmatter = @{}
-
-function Get-TopLevelTomlStringValues {
-    param([string]$Text)
-
-    $json = Invoke-PortableTomlParser -Arguments @("--stdin") -InputText $Text
-    $parsed = $json | ConvertFrom-Json
-    $values = @{}
-    foreach ($property in $parsed.PSObject.Properties) {
-        if ($property.Value -is [string]) {
-            $values[$property.Name] = $property.Value
-        }
-    }
-    return $values
+    return @(Get-PortableJsonProperty -Object $sectionValue -Name $Key)
 }
 
 function New-DirectoryForFile {
     param([string]$Path)
 
     $dir = Split-Path -Parent $Path
-    if ($dir -and -not (Test-Path $dir)) {
+    if ($dir -and -not (Test-Path -LiteralPath $dir)) {
         New-Item -ItemType Directory -Force $dir | Out-Null
-    }
-}
-
-function Assert-PathUnderRoot {
-    param(
-        [string]$Path,
-        [string]$Root
-    )
-
-    $fullRoot = Get-NormalizedPortablePath -Path $Root
-    $fullPath = Get-NormalizedPortablePath -Path $Path
-    Assert-PortablePathHasNoReparsePoint -Path $fullPath
-    $prefix = Get-PortableDescendantPrefix -Path $fullRoot
-    if (
-        $fullPath -eq $fullRoot -or
-        -not $fullPath.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)
-    ) {
-        throw "refusing to write outside allowed root: $Path"
     }
 }
 
@@ -303,6 +250,24 @@ function Assert-PortablePathHasNoReparsePoint {
     }
 }
 
+function Assert-PathUnderRoot {
+    param(
+        [string]$Path,
+        [string]$Root
+    )
+
+    $fullRoot = Get-NormalizedPortablePath -Path $Root
+    $fullPath = Get-NormalizedPortablePath -Path $Path
+    Assert-PortablePathHasNoReparsePoint -Path $fullPath
+    $prefix = Get-PortableDescendantPrefix -Path $fullRoot
+    if (
+        $fullPath -eq $fullRoot -or
+        -not $fullPath.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)
+    ) {
+        throw "refusing to write outside allowed root: $Path"
+    }
+}
+
 function Test-PortablePathsOverlap {
     param(
         [string]$Left,
@@ -314,18 +279,11 @@ function Test-PortablePathsOverlap {
     if ($leftPath -eq $rightPath) {
         return $true
     }
-
     $leftPrefix = Get-PortableDescendantPrefix -Path $leftPath
     $rightPrefix = Get-PortableDescendantPrefix -Path $rightPath
     return (
-        $leftPath.StartsWith(
-            $rightPrefix,
-            [System.StringComparison]::OrdinalIgnoreCase
-        ) -or
-        $rightPath.StartsWith(
-            $leftPrefix,
-            [System.StringComparison]::OrdinalIgnoreCase
-        )
+        $leftPath.StartsWith($rightPrefix, [System.StringComparison]::OrdinalIgnoreCase) -or
+        $rightPath.StartsWith($leftPrefix, [System.StringComparison]::OrdinalIgnoreCase)
     )
 }
 
@@ -357,6 +315,25 @@ function Assert-PortableRootsDisjoint {
     }
 }
 
+function Add-PortableItem {
+    param(
+        [System.Collections.Generic.List[object]]$Items,
+        [string]$Type,
+        [string]$RepoPath,
+        [string]$LivePath,
+        [string]$LiveRoot,
+        [string]$BackupScope
+    )
+
+    $Items.Add([pscustomobject]@{
+        Type = $Type
+        RepoPath = $RepoPath
+        LivePath = $LivePath
+        LiveRoot = $LiveRoot
+        BackupScope = $BackupScope
+    })
+}
+
 function Get-PortableFileMap {
     param(
         [string]$RepoRoot,
@@ -368,7 +345,6 @@ function Get-PortableFileMap {
     if (-not $AgentsHome) {
         $AgentsHome = Get-AgentsHome
     }
-
     if (-not $ClaudeHome) {
         $ClaudeHome = Get-ClaudeHome
     }
@@ -379,104 +355,41 @@ function Get-PortableFileMap {
         -ClaudeHome $ClaudeHome
 
     $items = New-Object System.Collections.Generic.List[object]
-
     foreach ($relative in Get-PortableManifestArray -Section "codex" -Key "files") {
-        $items.Add([pscustomobject]@{
-            Type = "file"
-            RepoPath = Join-Path (Join-Path $RepoRoot "codex") $relative
-            LivePath = Join-Path $CodexHome $relative
-            LiveRoot = $CodexHome
-            BackupScope = "codex"
-        })
+        Add-PortableItem -Items $items -Type "file" `
+            -RepoPath (Join-Path (Join-Path $RepoRoot "codex") $relative) `
+            -LivePath (Join-Path $CodexHome $relative) `
+            -LiveRoot $CodexHome -BackupScope "codex"
     }
-
-    foreach ($relative in Get-PortableManifestArray -Section "codex" -Key "dirs") {
-        $items.Add([pscustomobject]@{
-            Type = "dir"
-            RepoPath = Join-Path (Join-Path $RepoRoot "codex") $relative
-            LivePath = Join-Path $CodexHome $relative
-            LiveRoot = $CodexHome
-            BackupScope = "codex"
-        })
+    foreach ($agent in Get-PortableManifestArray -Section "codex" -Key "agents") {
+        Add-PortableItem -Items $items -Type "file" `
+            -RepoPath (Join-Path $RepoRoot "codex\agents\$agent.toml") `
+            -LivePath (Join-Path $CodexHome "agents\$agent.toml") `
+            -LiveRoot $CodexHome -BackupScope "codex"
     }
-
-    $codexAgentsHome = Join-Path $CodexHome "agents"
-    foreach ($agent in Get-PortableCodexAgentNames) {
-        $items.Add([pscustomobject]@{
-            Type = "file"
-            RepoPath = Join-Path (Join-Path (Join-Path $RepoRoot "codex") "agents") "$agent.toml"
-            LivePath = Join-Path $codexAgentsHome "$agent.toml"
-            LiveRoot = $CodexHome
-            BackupScope = "codex"
-        })
+    foreach ($skill in Get-PortableManifestArray -Section "agents" -Key "skills") {
+        Add-PortableItem -Items $items -Type "dir" `
+            -RepoPath (Join-Path $RepoRoot "codex\skills\$skill") `
+            -LivePath (Join-Path $AgentsHome "skills\$skill") `
+            -LiveRoot $AgentsHome -BackupScope "agents"
     }
-
-    # User skills follow the current user skill home. Project `.agents/skills`
-    # stay with the target repo.
-    $userSkillsHome = Join-Path $AgentsHome "skills"
-    foreach ($skill in Get-PortableSkillNames) {
-        $items.Add([pscustomobject]@{
-            Type = "dir"
-            RepoPath = Join-Path (Join-Path (Join-Path $RepoRoot "codex") "skills") $skill
-            LivePath = Join-Path $userSkillsHome $skill
-            LiveRoot = $AgentsHome
-            BackupScope = "agents"
-        })
+    foreach ($relative in Get-PortableManifestArray -Section "claude" -Key "files") {
+        Add-PortableItem -Items $items -Type "file" `
+            -RepoPath (Join-Path (Join-Path $RepoRoot "claude") $relative) `
+            -LivePath (Join-Path $ClaudeHome $relative) `
+            -LiveRoot $ClaudeHome -BackupScope "claude"
     }
-
-    # Claude owns a separately authored global instruction file. Shared skills
-    # and most agents still derive from the reviewed Codex source.
-    foreach ($relative in Get-PortableClaudeFileNames) {
-        $items.Add([pscustomobject]@{
-            Type = "file"
-            RepoPath = Join-Path (Join-Path $RepoRoot "claude") $relative
-            LivePath = Join-Path $ClaudeHome $relative
-            LiveRoot = $ClaudeHome
-            BackupScope = "claude"
-        })
+    foreach ($skill in Get-PortableManifestArray -Section "claude" -Key "skills") {
+        Add-PortableItem -Items $items -Type "dir" `
+            -RepoPath (Join-Path $RepoRoot "claude\skills\$skill") `
+            -LivePath (Join-Path $ClaudeHome "skills\$skill") `
+            -LiveRoot $ClaudeHome -BackupScope "claude"
     }
-
-    # Claude skills install to ~/.claude/skills and agents to ~/.claude/agents.
-    $claudeSkillsHome = Join-Path $ClaudeHome "skills"
-    foreach ($skill in Get-PortableClaudeSkillNames) {
-        $items.Add([pscustomobject]@{
-            Type = "dir"
-            RepoPath = Join-Path (Join-Path (Join-Path $RepoRoot "claude") "skills") $skill
-            LivePath = Join-Path $claudeSkillsHome $skill
-            LiveRoot = $ClaudeHome
-            BackupScope = "claude"
-        })
-    }
-
-    foreach ($skill in Get-PortableClaudeDerivedSkillNames) {
-        $items.Add([pscustomobject]@{
-            Type = "derived-skill"
-            RepoPath = Join-Path (Join-Path (Join-Path $RepoRoot "codex") "skills") $skill
-            LivePath = Join-Path $claudeSkillsHome $skill
-            LiveRoot = $ClaudeHome
-            BackupScope = "claude"
-        })
-    }
-
-    $claudeAgentsHome = Join-Path $ClaudeHome "agents"
-    foreach ($agent in Get-PortableClaudeAgentNames) {
-        $items.Add([pscustomobject]@{
-            Type = "file"
-            RepoPath = Join-Path (Join-Path (Join-Path $RepoRoot "claude") "agents") "$agent.md"
-            LivePath = Join-Path $claudeAgentsHome "$agent.md"
-            LiveRoot = $ClaudeHome
-            BackupScope = "claude"
-        })
-    }
-
-    foreach ($agent in Get-PortableClaudeDerivedAgentNames) {
-        $items.Add([pscustomobject]@{
-            Type = "derived-agent"
-            RepoPath = Join-Path (Join-Path (Join-Path $RepoRoot "codex") "agents") "$agent.toml"
-            LivePath = Join-Path $claudeAgentsHome "$agent.md"
-            LiveRoot = $ClaudeHome
-            BackupScope = "claude"
-        })
+    foreach ($agent in Get-PortableManifestArray -Section "claude" -Key "agents") {
+        Add-PortableItem -Items $items -Type "file" `
+            -RepoPath (Join-Path $RepoRoot "claude\agents\$agent.md") `
+            -LivePath (Join-Path $ClaudeHome "agents\$agent.md") `
+            -LiveRoot $ClaudeHome -BackupScope "claude"
     }
 
     foreach ($item in $items) {
@@ -511,25 +424,17 @@ function Backup-LiveItem {
         [string]$Type
     )
 
-    if (-not (Test-Path $LivePath)) {
+    if (-not (Test-Path -LiteralPath $LivePath)) {
         return
     }
-
     Assert-PathUnderRoot -Path $LivePath -Root $LiveRoot
-
-    $relative = $LivePath.Substring($LiveRoot.Length).TrimStart("\")
-    $backupBase = $BackupRoot
-    if ($BackupScope) {
-        $backupBase = Join-Path $BackupRoot $BackupScope
-    }
-    $backupPath = Join-Path $backupBase $relative
-
-    if ($Type -in @("dir", "derived-skill")) {
+    $relative = $LivePath.Substring($LiveRoot.Length).TrimStart("\", "/")
+    $backupPath = Join-Path (Join-Path $BackupRoot $BackupScope) $relative
+    if ($Type -eq "dir") {
         New-Item -ItemType Directory -Force (Split-Path -Parent $backupPath) | Out-Null
         Copy-Item -LiteralPath $LivePath -Destination $backupPath -Recurse -Force
         return
     }
-
     New-DirectoryForFile -Path $backupPath
     Copy-Item -LiteralPath $LivePath -Destination $backupPath -Force
 }
@@ -542,104 +447,31 @@ function Copy-PortableItem {
         [string]$AllowedRoot
     )
 
-    if (-not (Test-Path $Source)) {
+    if (-not (Test-Path -LiteralPath $Source)) {
         throw "missing portable source: $Source"
     }
-
-    if ($AllowedRoot) {
-        Assert-PathUnderRoot -Path $Destination -Root $AllowedRoot
-    }
-
+    Assert-PathUnderRoot -Path $Destination -Root $AllowedRoot
     if ($Type -eq "dir") {
-        if (Test-Path $Destination) {
+        if (Test-Path -LiteralPath $Destination) {
             Remove-Item -LiteralPath $Destination -Recurse -Force
         }
         New-Item -ItemType Directory -Force (Split-Path -Parent $Destination) | Out-Null
         Copy-Item -LiteralPath $Source -Destination $Destination -Recurse -Force
         return
     }
-
-    if ($Type -eq "derived-skill") {
-        if (Test-Path $Destination) {
-            Remove-Item -LiteralPath $Destination -Recurse -Force
-        }
-
-        New-Item -ItemType Directory -Force $Destination | Out-Null
-        Copy-Item -LiteralPath (Join-Path $Source "SKILL.md") -Destination (Join-Path $Destination "SKILL.md") -Force
-
-        foreach ($resourceDirectory in @("references", "scripts", "assets")) {
-            $resourceSource = Join-Path $Source $resourceDirectory
-            if (Test-Path -LiteralPath $resourceSource) {
-                Copy-Item -LiteralPath $resourceSource -Destination (Join-Path $Destination $resourceDirectory) -Recurse -Force
-            }
-        }
-
-        return
-    }
-
-    if ($Type -eq "derived-agent") {
-        $values = Get-TopLevelTomlStringValues -Text (Get-Content -Raw -LiteralPath $Source)
-        $name = $values["name"]
-        $body = $values["developer_instructions"]
-        $body = $body -replace "`r`n", "`n"
-        $body = $body -replace "^\n", ""
-        $body = $body -replace "\n+$", "`n"
-
-        $fm = $script:ClaudeDerivedAgentFrontmatter[$name]
-        $lines = @(
-            "---"
-            "name: $name"
-            "description: $($values["description"])"
-        )
-        if ($fm -and $fm["Tools"]) { $lines += "tools: $($fm["Tools"])" }
-        $lines += "model: inherit"
-        if ($fm -and $fm["Color"]) { $lines += "color: $($fm["Color"])" }
-        $lines += "---"
-
-        $content = ($lines -join "`n") + "`n`n" + $body
-
-        New-DirectoryForFile -Path $Destination
-        [System.IO.File]::WriteAllText($Destination, $content)
-        return
-    }
-
     New-DirectoryForFile -Path $Destination
     Copy-Item -LiteralPath $Source -Destination $Destination -Force
 }
 
 function Get-PortableDirectoryFileMap {
-    param(
-        [string]$Root,
-        [switch]$DerivedSkill
-    )
+    param([string]$Root)
 
     $map = @{}
     if (-not (Test-Path -LiteralPath $Root -PathType Container)) {
         return $map
     }
-
-    $files = if ($DerivedSkill) {
-        $selected = New-Object System.Collections.Generic.List[object]
-        $skillFile = Join-Path $Root "SKILL.md"
-        if (Test-Path -LiteralPath $skillFile -PathType Leaf) {
-            $selected.Add((Get-Item -LiteralPath $skillFile))
-        }
-        foreach ($resourceDirectory in @("references", "scripts", "assets")) {
-            $resourceRoot = Join-Path $Root $resourceDirectory
-            if (Test-Path -LiteralPath $resourceRoot -PathType Container) {
-                foreach ($file in Get-ChildItem -LiteralPath $resourceRoot -Recurse -File -Force) {
-                    $selected.Add($file)
-                }
-            }
-        }
-        $selected.ToArray()
-    }
-    else {
-        @(Get-ChildItem -LiteralPath $Root -Recurse -File -Force)
-    }
-
     $resolvedRoot = (Resolve-Path -LiteralPath $Root).Path
-    foreach ($file in $files) {
+    foreach ($file in Get-ChildItem -LiteralPath $Root -Recurse -File -Force) {
         $relative = $file.FullName.Substring($resolvedRoot.Length).TrimStart("\", "/")
         $map[$relative] = (Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName).Hash
     }
@@ -672,7 +504,6 @@ function Test-PortableItemInSync {
     if (-not (Test-Path -LiteralPath $Item.LivePath)) {
         return $false
     }
-
     if ($Item.Type -eq "file") {
         if (-not (Test-Path -LiteralPath $Item.LivePath -PathType Leaf)) {
             return $false
@@ -681,33 +512,10 @@ function Test-PortableItemInSync {
         $liveHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Item.LivePath).Hash
         return $sourceHash -eq $liveHash
     }
-
-    if ($Item.Type -eq "derived-agent") {
-        if (-not (Test-Path -LiteralPath $Item.LivePath -PathType Leaf)) {
-            return $false
-        }
-        $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) "compass-derived-$([guid]::NewGuid().ToString('N'))"
-        $tempFile = Join-Path $tempRoot "agent.md"
-        try {
-            New-Item -ItemType Directory -Force $tempRoot | Out-Null
-            Copy-PortableItem -Source $Item.RepoPath -Destination $tempFile -Type $Item.Type -AllowedRoot $tempRoot
-            $sourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $tempFile).Hash
-            $liveHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Item.LivePath).Hash
-            return $sourceHash -eq $liveHash
-        }
-        finally {
-            if (Test-Path -LiteralPath $tempRoot) {
-                Remove-Item -LiteralPath $tempRoot -Recurse -Force
-            }
-        }
-    }
-
     if (-not (Test-Path -LiteralPath $Item.LivePath -PathType Container)) {
         return $false
     }
-    $expected = Get-PortableDirectoryFileMap `
-        -Root $Item.RepoPath `
-        -DerivedSkill:($Item.Type -eq "derived-skill")
+    $expected = Get-PortableDirectoryFileMap -Root $Item.RepoPath
     $actual = Get-PortableDirectoryFileMap -Root $Item.LivePath
     return Test-PortableFileMapsEqual -Expected $expected -Actual $actual
 }

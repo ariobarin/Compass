@@ -1,7 +1,7 @@
 # Contributing
 
 Compass carries the current portable agent setup selected by
-`manifests/portable-files.toml`. Keep the source small, explicit, and directly
+`manifests/portable-files.json`. Keep the source small, explicit, and directly
 installable.
 
 Do not add project guidance, hosted applications, source archives, templates,

@@ -68,42 +68,23 @@ function Assert-FileContains {
 try {
     New-Item -ItemType Directory -Force $sourceRoot, $codexHome, $agentsHome, $claudeHome | Out-Null
     New-Item -ItemType Directory -Force (Join-Path $sourceRoot "scripts") | Out-Null
-    foreach ($name in @("common.ps1", "install.ps1", "portable-data.py", "verify-live.ps1")) {
+    foreach ($name in @("common.ps1", "install.ps1", "verify-live.ps1")) {
         Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $sourceRoot "scripts\$name")
     }
 
-    Write-Utf8Text -Path (Join-Path $sourceRoot "manifests\portable-files.toml") -Text @'
-[codex]
-home = "fixture"
-files = ["AGENTS.md"]
-dirs = []
-agents = ["sample"]
-
-[agents]
-home = "fixture"
-skills_dir = "fixture"
-skills = ["sample-skill"]
-
-[claude]
-home = "fixture"
-skills_dir = "fixture"
-agents_dir = "fixture"
-files = ["CLAUDE.md"]
-skills = []
-derived_skills = ["sample-skill"]
-agents = []
-derived_agents = ["sample"]
-
-[repo_only]
-files = ["README.md"]
-dirs = ["manifests", "scripts"]
-reason = "fixture"
-
-[local_only]
-files = []
-dirs = []
-patterns = []
+    $manifestText = @'
+{
+  "codex": {"files": ["AGENTS.md"], "agents": ["sample"]},
+  "agents": {"skills": ["sample-skill"]},
+  "claude": {
+    "files": ["CLAUDE.md"],
+    "skills": ["sample-skill"],
+    "agents": ["sample"]
+  }
+}
 '@
+    $manifestPath = Join-Path $sourceRoot "manifests\portable-files.json"
+    Write-Utf8Text -Path $manifestPath -Text $manifestText
     Write-Utf8Text -Path (Join-Path $sourceRoot "codex\AGENTS.md") -Text "# Portable Codex instructions`n"
     Write-Utf8Text -Path (Join-Path $sourceRoot "codex\agents\sample.toml") -Text @'
 name = "sample"
@@ -120,8 +101,9 @@ description: Validate portable skill installation.
 
 # Sample skill
 '@
-    Write-Utf8Text -Path (Join-Path $sourceRoot "codex\skills\sample-skill\agents\openai.yaml") -Text "interface:`n  display_name: Sample`n"
     Write-Utf8Text -Path (Join-Path $sourceRoot "claude\CLAUDE.md") -Text "# Portable Claude instructions`n"
+    Write-Utf8Text -Path (Join-Path $sourceRoot "claude\skills\sample-skill\SKILL.md") -Text "# Claude sample skill`n"
+    Write-Utf8Text -Path (Join-Path $sourceRoot "claude\agents\sample.md") -Text "# Claude sample agent`n"
     Write-Utf8Text -Path (Join-Path $codexHome "auth.json") -Text "unrelated`n"
     Write-Utf8Text -Path (Join-Path $agentsHome "skills\foreign\SKILL.md") -Text "foreign`n"
 
@@ -147,13 +129,11 @@ description: Validate portable skill installation.
     Assert-FileContains -Path (Join-Path $codexHome "AGENTS.md") -Expected "Portable Codex instructions"
     Assert-FileContains -Path (Join-Path $codexHome "agents\sample.toml") -Expected 'name = "sample"'
     Assert-FileContains -Path (Join-Path $agentsHome "skills\sample-skill\SKILL.md") -Expected "# Sample skill"
-    Assert-FileContains -Path (Join-Path $claudeHome "skills\sample-skill\SKILL.md") -Expected "# Sample skill"
-    Assert-FileContains -Path (Join-Path $claudeHome "agents\sample.md") -Expected "Return portable agent evidence"
+    Assert-FileContains -Path (Join-Path $claudeHome "CLAUDE.md") -Expected "Portable Claude instructions"
+    Assert-FileContains -Path (Join-Path $claudeHome "skills\sample-skill\SKILL.md") -Expected "# Claude sample skill"
+    Assert-FileContains -Path (Join-Path $claudeHome "agents\sample.md") -Expected "# Claude sample agent"
     Assert-FileContains -Path (Join-Path $codexHome "auth.json") -Expected "unrelated"
     Assert-FileContains -Path (Join-Path $agentsHome "skills\foreign\SKILL.md") -Expected "foreign"
-    if (Test-Path -LiteralPath (Join-Path $claudeHome "skills\sample-skill\agents")) {
-        throw "derived Claude skill retained Codex-only metadata"
-    }
 
     Add-Content -LiteralPath (Join-Path $codexHome "AGENTS.md") -Value "# local change"
     $replace = @(Invoke-TestScript -Path $installPath -Arguments (@("-Apply") + $homeArguments))
@@ -175,13 +155,30 @@ description: Validate portable skill installation.
         throw "direct installer created legacy receipts"
     }
 
-    $manifestPath = Join-Path $sourceRoot "manifests\portable-files.toml"
-    $manifest = Get-Content -Raw -LiteralPath $manifestPath
-    Write-Utf8Text -Path $manifestPath -Text $manifest.Replace('files = ["AGENTS.md"]', 'files = ["AGENTS.md", "../outside.md"]')
+    Write-Utf8Text -Path $manifestPath -Text $manifestText.Replace(
+        '"files": ["AGENTS.md"]',
+        '"files": ["AGENTS.md", "../outside.md"]'
+    )
     [void](Invoke-TestScript -Path $installPath -Arguments $homeArguments -ExpectedExitCode 1)
-    Write-Utf8Text -Path $manifestPath -Text $manifest.Replace('files = ["AGENTS.md"]', 'files = ["AGENTS.md", "agents/sample.toml"]')
+    Write-Utf8Text -Path $manifestPath -Text $manifestText.Replace(
+        '"files": ["AGENTS.md"]',
+        '"files": ["AGENTS.md", "agents/sample.toml"]'
+    )
     [void](Invoke-TestScript -Path $installPath -Arguments $homeArguments -ExpectedExitCode 1)
-    Write-Utf8Text -Path $manifestPath -Text $manifest.Replace('agents = ["sample"]', 'agents = ["missing"]')
+    Write-Utf8Text -Path $manifestPath -Text $manifestText.Replace(
+        '"agents": ["sample"]',
+        '"agents": ["missing"]'
+    )
+    [void](Invoke-TestScript -Path $installPath -Arguments $homeArguments -ExpectedExitCode 1)
+    Write-Utf8Text -Path $manifestPath -Text $manifestText.Replace(
+        '"agents": ["sample"]',
+        '"agents": ["sample"], "dirs": []'
+    )
+    [void](Invoke-TestScript -Path $installPath -Arguments $homeArguments -ExpectedExitCode 1)
+    Write-Utf8Text -Path $manifestPath -Text $manifestText.Replace(
+        '"files": ["AGENTS.md"]',
+        '"files": "AGENTS.md"'
+    )
     [void](Invoke-TestScript -Path $installPath -Arguments $homeArguments -ExpectedExitCode 1)
 
     Write-Host "portable bundle test: ok"

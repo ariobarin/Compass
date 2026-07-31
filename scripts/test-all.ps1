@@ -6,10 +6,7 @@ $ErrorActionPreference = "Stop"
 
 . "$PSScriptRoot\common.ps1"
 
-$data = Get-PortableGeneratedData
-if ($data.schema_version -ne 1) {
-    throw "portable manifest validation failed"
-}
+[void](Get-PortableManifest)
 
 $scratch = Join-Path ([System.IO.Path]::GetTempPath()) "compass-source-check-$([guid]::NewGuid().ToString('N'))"
 $items = @(

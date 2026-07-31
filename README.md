@@ -8,16 +8,13 @@ databases, browser state, generated plugins, and machine-only values stay local.
 
 ## Portable Sources
 
-`manifests/portable-files.toml` selects the current bundle:
+`manifests/portable-files.json` selects the current bundle:
 
 - `codex.files` installs files from `codex/` into the Codex home.
-- `codex.dirs` installs other explicitly selected Codex directory trees.
 - `codex.agents` installs selected `codex/agents/<name>.toml` subagents without
   copying repository documentation.
 - `agents.skills` installs `codex/skills/<name>/` into `$HOME/.agents/skills`.
 - `claude.files`, `claude.skills`, and `claude.agents` install direct Claude
-  definitions.
-- `claude.derived_skills` and `claude.derived_agents` reuse compatible Codex
   definitions.
 
 `codex/AGENTS.md` remains as the permanent global instruction source, with no
@@ -53,4 +50,4 @@ Run the portable test suite:
 
 Install backs up a selected target before replacing it. It does not remove or
 inspect unlisted runtime state. Git contains the configuration history, so
-Compass carries no retirement or backwards-compatibility database.
+Compass carries no retirement or backwards compatibility database.
