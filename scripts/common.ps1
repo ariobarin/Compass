@@ -158,6 +158,10 @@ function Get-PortableSkillNames {
     return Get-PortableManifestArray -Section "agents" -Key "skills"
 }
 
+function Get-PortableCodexAgentNames {
+    return Get-PortableManifestArray -Section "codex" -Key "agents"
+}
+
 function Get-PortableManifestArray {
     param(
         [string]$Section,
@@ -391,6 +395,17 @@ function Get-PortableFileMap {
             Type = "dir"
             RepoPath = Join-Path (Join-Path $RepoRoot "codex") $relative
             LivePath = Join-Path $CodexHome $relative
+            LiveRoot = $CodexHome
+            BackupScope = "codex"
+        })
+    }
+
+    $codexAgentsHome = Join-Path $CodexHome "agents"
+    foreach ($agent in Get-PortableCodexAgentNames) {
+        $items.Add([pscustomobject]@{
+            Type = "file"
+            RepoPath = Join-Path (Join-Path (Join-Path $RepoRoot "codex") "agents") "$agent.toml"
+            LivePath = Join-Path $codexAgentsHome "$agent.toml"
             LiveRoot = $CodexHome
             BackupScope = "codex"
         })

@@ -19,7 +19,7 @@ MANIFEST_SECTIONS = (
     "local_only",
 )
 MANIFEST_ARRAYS = {
-    "codex": ("files", "dirs"),
+    "codex": ("files", "dirs", "agents"),
     "agents": ("skills",),
     "claude": ("files", "skills", "derived_skills", "agents", "derived_agents"),
     "repo_only": ("files", "dirs"),
@@ -33,6 +33,7 @@ MANIFEST_STRINGS = {
 }
 AGENT_STRING_FIELDS = ("name", "description", "developer_instructions")
 NAME_ARRAYS = {
+    ("codex", "agents"),
     ("agents", "skills"),
     ("claude", "skills"),
     ("claude", "derived_skills"),
@@ -160,12 +161,20 @@ def load_repository(root: Path) -> dict[str, Any]:
             raise ValueError(f"duplicate agent name: {name}")
         agents[name] = data
 
-    manifest_agents = set(manifest["claude"]["derived_agents"])
-    missing_agents = sorted(manifest_agents - set(agents))
-    if missing_agents:
+    codex_agents = set(manifest["codex"]["agents"])
+    missing_codex_agents = sorted(codex_agents - set(agents))
+    if missing_codex_agents:
+        raise ValueError(
+            "manifest Codex agents missing from codex/agents: "
+            + ", ".join(missing_codex_agents)
+        )
+
+    derived_agents = set(manifest["claude"]["derived_agents"])
+    missing_derived_agents = sorted(derived_agents - set(agents))
+    if missing_derived_agents:
         raise ValueError(
             "manifest derived agents missing from codex/agents: "
-            + ", ".join(missing_agents)
+            + ", ".join(missing_derived_agents)
         )
 
     return {"schema_version": 1, "manifest": manifest, "agents": agents}

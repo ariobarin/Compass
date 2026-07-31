@@ -76,7 +76,8 @@ try {
 [codex]
 home = "fixture"
 files = ["AGENTS.md"]
-dirs = ["agents"]
+dirs = []
+agents = ["sample"]
 
 [agents]
 home = "fixture"
@@ -179,6 +180,8 @@ description: Validate portable skill installation.
     Write-Utf8Text -Path $manifestPath -Text $manifest.Replace('files = ["AGENTS.md"]', 'files = ["AGENTS.md", "../outside.md"]')
     [void](Invoke-TestScript -Path $installPath -Arguments $homeArguments -ExpectedExitCode 1)
     Write-Utf8Text -Path $manifestPath -Text $manifest.Replace('files = ["AGENTS.md"]', 'files = ["AGENTS.md", "agents/sample.toml"]')
+    [void](Invoke-TestScript -Path $installPath -Arguments $homeArguments -ExpectedExitCode 1)
+    Write-Utf8Text -Path $manifestPath -Text $manifest.Replace('agents = ["sample"]', 'agents = ["missing"]')
     [void](Invoke-TestScript -Path $installPath -Arguments $homeArguments -ExpectedExitCode 1)
 
     Write-Host "portable bundle test: ok"

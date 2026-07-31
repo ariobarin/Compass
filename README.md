@@ -11,7 +11,9 @@ databases, browser state, generated plugins, and machine-only values stay local.
 `manifests/portable-files.toml` selects the current bundle:
 
 - `codex.files` installs files from `codex/` into the Codex home.
-- `codex.dirs` installs directories such as `codex/agents/`.
+- `codex.dirs` installs other explicitly selected Codex directory trees.
+- `codex.agents` installs selected `codex/agents/<name>.toml` subagents without
+  copying repository documentation.
 - `agents.skills` installs `codex/skills/<name>/` into `$HOME/.agents/skills`.
 - `claude.files`, `claude.skills`, and `claude.agents` install direct Claude
   definitions.
@@ -19,8 +21,9 @@ databases, browser state, generated plugins, and machine-only values stay local.
   definitions.
 
 `codex/AGENTS.md` remains as the permanent global instruction source, with no
-active instructions. Skill and agent collections are empty until a reviewed
-change adds a source and its manifest entry.
+active instructions. `codex/skills/` and `codex/agents/` remain as permanent
+portable source surfaces. Their active collections are empty until a reviewed
+change adds a definition and its manifest entry.
 
 ## Commands
 

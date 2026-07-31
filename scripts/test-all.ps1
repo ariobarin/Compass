@@ -24,6 +24,14 @@ foreach ($item in $items) {
         throw "missing portable source: $($item.RepoPath)"
     }
 }
+foreach ($sourcePath in @(
+    (Join-Path (Get-RepoRoot) "codex\skills\README.md"),
+    (Join-Path (Get-RepoRoot) "codex\agents\README.md")
+)) {
+    if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) {
+        throw "missing permanent portable source surface: $sourcePath"
+    }
+}
 
 $installRoot = Join-Path ([System.IO.Path]::GetTempPath()) "compass-blank-install-$([guid]::NewGuid().ToString('N'))"
 try {
@@ -45,6 +53,12 @@ try {
     }
     if (Test-Path -LiteralPath (Join-Path $blankCodexHome "config.toml")) {
         throw "blank installation created config.toml"
+    }
+    if (Test-Path -LiteralPath (Join-Path $blankCodexHome "agents")) {
+        throw "blank installation created active Codex subagents"
+    }
+    if (Test-Path -LiteralPath (Join-Path $blankAgentsHome "skills")) {
+        throw "blank installation created active skills"
     }
 }
 finally {

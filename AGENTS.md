@@ -8,7 +8,9 @@ configuration. The current bundle is intentionally blank.
 - `codex/AGENTS.md` is the permanent global Codex instruction source. It may be
   empty, but the source path stays in Compass.
 - Portable skills belong under `codex/skills/<name>/` and are selected by
-  `manifests/portable-files.toml`.
+  `agents.skills` in `manifests/portable-files.toml`.
+- Portable Codex subagents belong under `codex/agents/<name>.toml` and are
+  selected by `codex.agents`.
 - Project-specific behavior belongs in the project that uses it.
 - Auth, sessions, logs, caches, databases, browser state, generated plugin
   state, and machine-only values stay untracked.

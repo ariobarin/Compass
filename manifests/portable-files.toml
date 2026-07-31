@@ -12,6 +12,10 @@ files = [
 dirs = [
 ]
 
+# Codex subagents are authored under codex/agents as TOML files.
+agents = [
+]
+
 [agents]
 # User skills install to the current user skill home, separate from the
 # Codex home used for AGENTS.md, keybindings, and custom agents.
