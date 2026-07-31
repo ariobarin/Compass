@@ -125,6 +125,12 @@ Read local orchestration state:
 .\scripts\compass.ps1 orchestration
 ```
 
+Run a reviewed dynamic workflow over bounded Luna workers:
+
+```powershell
+.\scripts\compass.ps1 workflow -WorkflowFile .\tmp\research.py
+```
+
 Without `-Apply`, mutation scripts stay in review mode and report exact planned
 changes. Scripts use `-CodexHome`, then `$env:CODEX_HOME`, then
 `%USERPROFILE%\.codex`; `-AgentsHome`, then `$HOME\.agents`; and `-ClaudeHome`,

@@ -21,6 +21,7 @@ and cache paths out of this repo.
 | Agents | Spawn focused Codex sessions with custom instructions | No active global route | Medium | The authored global roster is empty. Carried agent packs remain project opt-in and are never promoted by the portable installer. |
 | Hooks | Run trusted commands around Codex tool use and turn closeout | No active global route | High | Authored global hooks are retired. Restoring one requires explicit user approval and a separate reviewed change with an exact failure contract and proving test. |
 | Orchestration ledger | Writes compact controller state through an exclusive lock and atomic file replacement | Partial | Medium | The scripts are portable; live ledgers stay local under `.local/`. Gate state records coordination and never grants push, merge, release, deployment, or publication authority. |
+| Dynamic Codex workflow CLI | Executes a reviewed Python workflow and bounded `codex exec` child processes | Partial | High | Workflow code runs with host permissions. Worker sandboxes do not sandbox it. Runs stay local under `.local/`; review workflow code, keep the CLI sandbox ceiling narrow, and inspect captured prompts and outputs before sharing artifacts. |
 | Restart recovery script | Registers a Windows logon task and can resume saved Codex sessions once per boot | Partial | High | Keep scheduled-task instances, logs, and session state local. Review the script and workflow here, cap resumed sessions, and avoid recurring polling. |
 
 ## Review Checklist

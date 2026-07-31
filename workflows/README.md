@@ -12,6 +12,7 @@ Choose the workflow by the decision or operation it owns:
 | Install, diff, snapshot, verify, or update portable source | [portable-config.md](portable-config.md) |
 | Preserve one objective across contexts and delegates | [long-running-work.md](long-running-work.md) |
 | Operate the local mechanical control index | [orchestration-ledger.md](orchestration-ledger.md) |
+| Run dynamic code-defined Codex agent workflows | [dynamic-codex-workflows.md](dynamic-codex-workflows.md) |
 | Author a reviewed durable plan artifact | [plan-template.md](plan-template.md) |
 | Coordinate parallel PR work without public sprawl | [multi-thread-pr-coordination.md](multi-thread-pr-coordination.md) |
 | Recover unfinished Codex sessions after restart | [codex-restart-recovery.md](codex-restart-recovery.md) |

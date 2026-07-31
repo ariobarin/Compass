@@ -54,6 +54,10 @@ jobs:
         shell: pwsh
         run: python scripts/test-compass-architecture.py
 
+      - name: Test dynamic Codex workflow runtime
+        shell: pwsh
+        run: python scripts/test-codex-workflow.py
+
       - name: Test reviewed config
         shell: pwsh
         run: python scripts/test-reviewed-config.py

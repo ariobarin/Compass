@@ -15,6 +15,9 @@ Runs Compass maintenance commands through one stable entry point.
 ./scripts/compass.ps1 orchestration -Plain
 
 .EXAMPLE
+./scripts/compass.ps1 workflow -WorkflowFile ./tmp/research.py
+
+.EXAMPLE
 ./scripts/compass.ps1 install -Apply
 
 .EXAMPLE
@@ -26,7 +29,7 @@ Runs Compass maintenance commands through one stable entry point.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true, Position = 0)]
-    [ValidateSet("status", "skills", "skills-audit", "orchestration", "doctor", "diff", "install", "snapshot", "verify", "update")]
+    [ValidateSet("status", "skills", "skills-audit", "orchestration", "workflow", "doctor", "diff", "install", "snapshot", "verify", "update")]
     [string]$Command,
 
     [switch]$Apply,
@@ -43,6 +46,22 @@ param(
     [string[]]$AdditionalSkillRoot,
     [string]$Ledger,
     [string]$GoalId,
+    [string]$WorkflowFile,
+    [string[]]$WorkflowArgument,
+    [string]$Model = "gpt-5.6-luna",
+    [ValidateSet("low", "medium", "high", "xhigh")]
+    [string]$ReasoningEffort = "high",
+    [ValidateSet("read-only", "workspace-write", "danger-full-access")]
+    [string]$Sandbox = "read-only",
+    [ValidateRange(1, 128)]
+    [int]$MaxConcurrency = 3,
+    [ValidateRange(1, 10000)]
+    [int]$MaxAgents = 32,
+    [ValidateRange(0.001, [double]::MaxValue)]
+    [double]$TimeoutSeconds,
+    [string]$WorkingDirectory = ".",
+    [string]$RunRoot,
+    [string]$CodexExecutable = "codex",
     [string]$Remote = "origin",
     [Alias("Branch")]
     [string]$Ref = "main"
@@ -167,6 +186,27 @@ if (($ProjectPath -or $AdditionalSkillRoot) -and $Command -notin @("skills", "sk
 if (($Ledger -or $GoalId) -and $Command -ne "orchestration") {
     throw "-Ledger and -GoalId are supported only by orchestration"
 }
+$workflowParameters = @(
+    "WorkflowFile",
+    "WorkflowArgument",
+    "Model",
+    "ReasoningEffort",
+    "Sandbox",
+    "MaxConcurrency",
+    "MaxAgents",
+    "TimeoutSeconds",
+    "WorkingDirectory",
+    "RunRoot",
+    "CodexExecutable"
+)
+foreach ($parameterName in $workflowParameters) {
+    if ($Command -ne "workflow" -and $PSBoundParameters.ContainsKey($parameterName)) {
+        throw "-$parameterName is supported only by workflow"
+    }
+}
+if ($Command -eq "workflow" -and -not $WorkflowFile) {
+    throw "workflow requires -WorkflowFile"
+}
 
 $homeArguments = Get-HomeArguments
 
@@ -267,6 +307,37 @@ switch ($Command) {
             $arguments["Plain"] = $true
         }
         Invoke-CompassScript -Name "orchestration-ledger.ps1" -Arguments $arguments
+    }
+    "workflow" {
+        $runner = Get-PortablePythonRunner
+        $workflowScript = Join-Path $PSScriptRoot "codex_workflow.py"
+        $arguments = @($runner.Prefix) + @(
+            $workflowScript,
+            $WorkflowFile,
+            "--model", $Model,
+            "--effort", $ReasoningEffort,
+            "--sandbox", $Sandbox,
+            "--max-concurrency", $MaxConcurrency,
+            "--max-agents", $MaxAgents,
+            "--cwd", $WorkingDirectory,
+            "--codex", $CodexExecutable
+        )
+        if ($PSBoundParameters.ContainsKey("TimeoutSeconds")) {
+            $arguments += @(
+                "--timeout-seconds",
+                $TimeoutSeconds.ToString([System.Globalization.CultureInfo]::InvariantCulture)
+            )
+        }
+        if ($RunRoot) {
+            $arguments += @("--run-root", $RunRoot)
+        }
+        foreach ($workflowValue in @($WorkflowArgument)) {
+            if ($null -ne $workflowValue) {
+                $arguments += "--arg=$workflowValue"
+            }
+        }
+        & $runner.Command @arguments
+        exit $LASTEXITCODE
     }
     "doctor" {
         Invoke-CompassScript -Name "doctor.ps1" -Arguments $homeArguments

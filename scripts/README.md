@@ -16,6 +16,8 @@ can still be called directly.
 .\scripts\compass.ps1 orchestration
 .\scripts\compass.ps1 orchestration -Plain
 .\scripts\compass.ps1 orchestration -GoalId release-42 -Json
+.\scripts\compass.ps1 workflow -WorkflowFile .\tmp\research.py
+.\scripts\compass.ps1 workflow -WorkflowFile .\tmp\implement.py -Sandbox workspace-write
 .\scripts\compass.ps1 doctor
 .\scripts\compass.ps1 diff
 .\scripts\compass.ps1 install
@@ -64,6 +66,15 @@ circuits. Every mutation requires the named principal and expected revision.
 Delegated workers return artifacts and evidence; they cannot mutate control
 state. Legacy schema versions migrate on load and are rewritten to the current
 version on the next successful write.
+
+`workflow` runs a reviewed Python program that dynamically coordinates
+ephemeral `codex exec` workers. The program owns its branching, loops, fanout,
+reductions, and stopping conditions through ordinary Python control flow. The
+runtime supplies a bounded asynchronous `context.agent()` primitive rather than
+a catalog of predefined workflow cases. Luna, high reasoning, read-only access,
+three concurrent agents, and 32 total calls are the defaults. See
+[dynamic-codex-workflows.md](../workflows/dynamic-codex-workflows.md) for the
+programming contract, execution limits, artifacts, and trust boundary.
 
 Use `check-recovery` for read-only observation. Use `begin-recovery` after the
 principal reviews an assignment. A failure with no new discriminating evidence
