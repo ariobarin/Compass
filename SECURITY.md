@@ -22,7 +22,7 @@ issue without exposing new secrets.
 In scope:
 
 - tracked files in this repository;
-- install, snapshot, diff, and verification scripts;
+- install and verification scripts;
 - portable config fragments and manifests;
 - guidance that could cause Codex to copy local-only state into git;
 - guidance that could grant stronger authority than the docs explain.

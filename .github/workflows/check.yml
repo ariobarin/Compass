@@ -1,0 +1,43 @@
+name: check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  portable:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-2025
+          - ubuntu-latest
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Run portable tests
+        shell: pwsh
+        run: ./scripts/test-all.ps1
+
+      - name: Check diff formatting
+        shell: pwsh
+        run: git diff --check HEAD^
+
+  windows-powershell:
+    runs-on: windows-2025
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Run portable tests
+        shell: powershell
+        run: ./scripts/test-all.ps1

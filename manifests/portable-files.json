@@ -1,0 +1,17 @@
+{
+  "codex": {
+    "config": "config.toml",
+    "files": [
+      "AGENTS.md"
+    ],
+    "agents": []
+  },
+  "agents": {
+    "skills": []
+  },
+  "claude": {
+    "files": [],
+    "skills": [],
+    "agents": []
+  }
+}

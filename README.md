@@ -1,152 +1,57 @@
 # Compass
 
-Reviewed maintenance source for a deliberately blank global Codex and Claude
-Code setup.
+Compass is reviewed source for portable Codex and Claude Code configuration,
+instructions, skills, and agents. The current bundle contains portable Codex
+defaults and no active skills or agents.
 
-Compass preserves capability while reducing the context, duplication, state,
-and maintenance overhead required to use agents well. Its central concern is
-coherence: one intention should survive long sessions, compaction, delegation,
-model changes, and machine changes without turning intelligent work into a rigid
-script.
+It is an allowlist, not a runtime-home backup. Auth, sessions, logs, caches,
+databases, browser state, generated plugins, and machine-only values stay local.
 
-This repository is an allowlist, not a backup of runtime homes. Authentication,
-sessions, logs, caches, databases, browser state, generated plugin state,
-machine paths, hosted settings, cloud task history, and connector installs stay
-outside the reviewed source.
+## Portable Sources
 
-Read [philosophy.md](philosophy.md) for the governing ideas and
-[glossary.md](glossary.md) for terms whose distinctions change behavior.
+`manifests/portable-files.json` selects the current bundle:
 
-For public use, treat this repository as a worked example. Review
-[CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and
-[SUPPORT.md](SUPPORT.md) before copying its files or proposing changes.
+- `codex.files` installs files from `codex/` into the Codex home.
+- `codex.config` overlays reviewed keys from `codex/config.toml` while keeping
+  unlisted live configuration intact.
+- `codex.agents` installs selected `codex/agents/<name>.toml` subagents without
+  copying repository documentation.
+- `agents.skills` installs `codex/skills/<name>/` into `$HOME/.agents/skills`.
+- `claude.files`, `claude.skills`, and `claude.agents` install direct Claude
+  definitions.
 
-## Layout
+`codex/AGENTS.md` remains as the permanent global instruction source, with no
+active instructions. `codex/config.toml` carries durable global defaults while
+machine paths, generated plugin state, project trust, and app-local settings
+stay in the live file. Skill and agent collections remain empty until a
+reviewed change adds a definition and its manifest entry.
 
-### Runtime state
+## Commands
 
-`manifests/portable-files.toml` is the authoritative active bundle. Its Codex
-files and directories, user skills, Claude files, skills and agents, and
-reviewed config collections are currently empty.
-
-`manifests/portable-retirements.json` records the exact former global targets
-and reviewed config values retired from base `349b94a`. Install removes a file
-or directory only when the current receipt owns its exact fingerprint, unless
-`-Adopt` explicitly authorizes a changed or foreign target. Retired config
-entries are removed only when their current values match the recorded prior
-reviewed values. Unrelated files, config keys, and comments remain untouched.
-
-### Narrower and maintainer surfaces
-
-- `carried/` contains portable opt-in domain packs that do not belong in every
-  session. The benchmark operations pack and WebMCP pack live here.
-- `external-sources/` preserves reviewed third-party source snapshots without
-  installing them globally.
-- `workflows/` contains recurring Compass maintenance procedures. Start with
-  [workflows/README.md](workflows/README.md).
-- `local-docs/` contains reviewed maintenance reasoning and dated calibration
-  that should not enter runtime context.
-- `manifests/` contains install boundaries, skill ownership, policy contracts,
-  plugins, and mechanical schemas.
-- `project-templates/` contains repository-only starter material preserved from
-  retired global capabilities.
-- `scripts/` contains deterministic install, diff, validation, status,
-  orchestration-ledger, and recovery mechanics.
-- `AGENTS.md` is repository-local guidance for maintaining Compass itself.
-
-Project-specific `AGENTS.md`, `CLAUDE.md`, agents, and skills belong in their
-project. `AGENTS.override.md` and machine-only rules remain local unless they are
-deliberately adopted as reviewed portable policy.
-
-## Long-Running Work
-
-Long-running work uses durable control documents rather than conversation
-history as authority. The user-facing principal, or the user directly, authors
-the goal, plan, catalog, assignments, and checkpoints. Delegates receive
-reviewed assignments and return artifacts plus evidence. A fresh principal
-context resumes the same logical role by reopening and verifying those anchors.
-
-See [workflows/long-running-work.md](workflows/long-running-work.md) and
-[workflows/orchestration-ledger.md](workflows/orchestration-ledger.md).
-
-## Common Commands
-
-Preview the difference between reviewed source and live install targets:
-
-```powershell
-.\scripts\diff-live.ps1
-```
-
-Check portability, manifests, retirement policy, carried packs, and text rules:
-
-```powershell
-.\scripts\doctor.ps1
-```
-
-Preview unfinished Codex sessions that restart recovery would resume:
-
-```powershell
-.\scripts\codex-restart-recovery.ps1 -DryRun
-```
-
-Check live Codex, user-skill, and Claude files against the allowlist:
-
-```powershell
-.\scripts\verify-live.ps1
-```
-
-Preview an installation:
+Preview the current bundle:
 
 ```powershell
 .\scripts\install.ps1
 ```
 
-Apply the reviewed blank transition:
+Install it:
 
 ```powershell
 .\scripts\install.ps1 -Apply
 ```
 
-Fetch the requested reviewed ref, install it, and verify live state:
+Verify installed targets:
 
 ```powershell
-.\scripts\update-live.ps1
+.\scripts\verify-live.ps1 -RequireInSync
 ```
 
-Refresh reviewed source from the current live allowlist:
+Run the portable test suite:
 
 ```powershell
-.\scripts\snapshot.ps1 -Apply
+.\scripts\test-all.ps1
 ```
 
-Read local orchestration state:
-
-```powershell
-.\scripts\compass.ps1 orchestration
-```
-
-Without `-Apply`, mutation scripts stay in review mode and report exact planned
-changes. Scripts use `-CodexHome`, then `$env:CODEX_HOME`, then
-`%USERPROFILE%\.codex`; `-AgentsHome`, then `$HOME\.agents`; and `-ClaudeHome`,
-then `$HOME\.claude`.
-
-## Repository Rules
-
-- Keep Compass small, explicit, and auditable.
-- Every durable addition removes, merges, narrows, derives, or mechanizes
-  recurring cost, or states why its distinct behavior earns that cost.
-- Lead guidance with the role and desired state. Use prohibitions for crisp
-  boundaries and known failure shapes.
-- Shape judgment before procedure. Exact steps protect fragile mechanics,
-  irreversible actions, and handoff contracts.
-- Preserve one logical principal author across long-running contexts. Delegates
-  return evidence instead of inventing parallel control state.
-- Keep model-specific observations dated and revisable in maintainer docs.
-- Copy ordinary files into normal runtime locations. Avoid symlink-based setup.
-- Keep secrets, auth, databases, logs, sessions, browser profiles, caches,
-  generated plugin state, and machine paths outside the repository.
-- Keep plugin source in a normal repository and install routes in workflows.
-- Keep skill descriptions concise. Put action-critical behavior in `SKILL.md`,
-  optional detail in references, and deterministic mechanics in scripts.
-- Use a pull request as the durable review unit. Readiness never grants merge or
-  other public-mutation authority.
+Install backs up a selected target before replacing it. It does not remove or
+inspect unlisted runtime state. Git contains the configuration history, so
+Compass carries no retirement or backwards compatibility database.
