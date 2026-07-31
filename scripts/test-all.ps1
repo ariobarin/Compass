@@ -29,6 +29,8 @@ if ($LASTEXITCODE -ne 0) {
 
 Invoke-PowerShellTest -Path (Join-Path $PSScriptRoot "test-retire-plugins.ps1")
 Invoke-PowerShellTest -Path (Join-Path $PSScriptRoot "test-portable-bundle.ps1")
-Invoke-PowerShellTest -Path (Join-Path $PSScriptRoot "test-install-roundtrip.ps1")
+if ($env:OS -eq "Windows_NT") {
+    Invoke-PowerShellTest -Path (Join-Path $PSScriptRoot "test-install-roundtrip.ps1")
+}
 
 Write-Host "portable tests: ok"
