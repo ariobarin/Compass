@@ -22,13 +22,13 @@ function Invoke-PowerShellTest {
 }
 
 $runner = Get-PortablePythonRunner
-& $runner.Command @($runner.Prefix) "$PSScriptRoot\test-reviewed-config.py"
+& $runner.Command @($runner.Prefix) (Join-Path $PSScriptRoot "test-reviewed-config.py")
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-Invoke-PowerShellTest -Path "$PSScriptRoot\test-retire-plugins.ps1"
-Invoke-PowerShellTest -Path "$PSScriptRoot\test-portable-bundle.ps1"
-Invoke-PowerShellTest -Path "$PSScriptRoot\test-install-roundtrip.ps1"
+Invoke-PowerShellTest -Path (Join-Path $PSScriptRoot "test-retire-plugins.ps1")
+Invoke-PowerShellTest -Path (Join-Path $PSScriptRoot "test-portable-bundle.ps1")
+Invoke-PowerShellTest -Path (Join-Path $PSScriptRoot "test-install-roundtrip.ps1")
 
 Write-Host "portable tests: ok"
