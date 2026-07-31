@@ -511,13 +511,37 @@ function Backup-LiveItem {
     Copy-Item -LiteralPath $LivePath -Destination $backupPath -Force
 }
 
+function Get-PortableUtf8Lines {
+    param([string]$Path)
+
+    $encoding = [System.Text.UTF8Encoding]::new($false, $true)
+    return [System.IO.File]::ReadAllLines($Path, $encoding)
+}
+
+function ConvertFrom-PortableConfigSectionHeader {
+    param([string]$Header)
+
+    $segment = '(?:''([A-Za-z0-9_-]+)''|"([A-Za-z0-9_-]+)"|([A-Za-z0-9_-]+))'
+    if ($Header -cnotmatch ('^' + $segment + '(?:\s*\.\s*' + $segment + ')*$')) {
+        return $Header
+    }
+    $parts = foreach ($match in [regex]::Matches($Header, $segment)) {
+        @($match.Groups[1].Value, $match.Groups[2].Value, $match.Groups[3].Value) |
+            Where-Object { $_ } |
+            Select-Object -First 1
+    }
+    return $parts -join "."
+}
+
 function Get-PortableConfigEntries {
     param([string]$Path)
 
     $entries = New-Object System.Collections.Generic.List[object]
     $section = ""
-    $seen = @{}
-    foreach ($line in Get-Content -LiteralPath $Path) {
+    $seen = [System.Collections.Generic.Dictionary[string, bool]]::new(
+        [System.StringComparer]::Ordinal
+    )
+    foreach ($line in Get-PortableUtf8Lines -Path $Path) {
         $trimmed = $line.Trim()
         if (-not $trimmed -or $trimmed.StartsWith("#")) {
             continue
@@ -548,11 +572,13 @@ function Get-PortableConfigEntries {
 function Get-LiveConfigValueMap {
     param([string]$Path)
 
-    $values = @{}
+    $values = [System.Collections.Generic.Dictionary[string, string]]::new(
+        [System.StringComparer]::Ordinal
+    )
     $section = ""
-    foreach ($line in Get-Content -LiteralPath $Path) {
+    foreach ($line in Get-PortableUtf8Lines -Path $Path) {
         if ($line -match '^\s*\[(.+)\]\s*(?:#.*)?$') {
-            $section = $Matches[1]
+            $section = ConvertFrom-PortableConfigSectionHeader -Header $Matches[1]
             continue
         }
         if ($line -match '^\s*([A-Za-z0-9_.-]+)\s*=\s*(.+?)\s*$') {
@@ -576,7 +602,7 @@ function Merge-PortableConfig {
     }
 
     $lines = New-Object System.Collections.Generic.List[string]
-    foreach ($line in Get-Content -LiteralPath $Destination) {
+    foreach ($line in Get-PortableUtf8Lines -Path $Destination) {
         $lines.Add($line)
     }
     foreach ($entry in $entries) {
@@ -590,7 +616,8 @@ function Merge-PortableConfig {
                         $end = $index
                         break
                     }
-                    if ($Matches[1] -eq $entry.Section) {
+                    $candidateSection = ConvertFrom-PortableConfigSectionHeader -Header $Matches[1]
+                    if ($candidateSection -ceq $entry.Section) {
                         $start = $index + 1
                     }
                 }
@@ -616,7 +643,7 @@ function Merge-PortableConfig {
         $found = $false
         for ($index = $start; $index -lt $end; $index++) {
             if ($lines[$index] -match '^\s*([A-Za-z0-9_.-]+)\s*=') {
-                if ($Matches[1] -eq $entry.Key) {
+                if ($Matches[1] -ceq $entry.Key) {
                     $lines[$index] = "$($entry.Key) = $($entry.Value)"
                     $found = $true
                     break

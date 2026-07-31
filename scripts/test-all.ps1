@@ -30,7 +30,8 @@ function Assert-TestFileContains {
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
         throw "missing expected file: $Path"
     }
-    if (-not (Get-Content -Raw -LiteralPath $Path).Contains($Expected)) {
+    $encoding = [System.Text.UTF8Encoding]::new($false, $true)
+    if (-not ([System.IO.File]::ReadAllText($Path, $encoding)).Contains($Expected)) {
         throw "expected $Path to contain: $Expected"
     }
 }
@@ -41,18 +42,19 @@ $agentsHome = Join-Path $testRoot "agents"
 $claudeHome = Join-Path $testRoot "claude"
 
 try {
+    $machineLabel = "preserve caf$([char]0x00E9)"
     Write-TestFile -Path (Join-Path $codexHome "AGENTS.md\local.txt") -Content "preserve this backup`n"
     Write-TestFile -Path (Join-Path $codexHome "auth.json") -Content "leave unlisted state alone`n"
-    Write-TestFile -Path (Join-Path $codexHome "config.toml") -Content @'
-model = "old"
-machine_setting = "preserve"
+    Write-TestFile -Path (Join-Path $codexHome "config.toml") -Content @"
+MODEL = "machine-specific"
+machine_setting = "$machineLabel"
 
-[features]
+["features"]
 memories = false
 
 [projects.'C:\machine']
 trust_level = "trusted"
-'@
+"@
 
     & (Join-Path $PSScriptRoot "install.ps1") `
         -Apply `
@@ -67,7 +69,15 @@ trust_level = "trusted"
 
     Assert-TestFileContains -Path (Join-Path $codexHome "AGENTS.md") -Expected "Intentionally blank"
     Assert-TestFileContains -Path (Join-Path $codexHome "config.toml") -Expected 'model = "gpt-5.6-sol"'
-    Assert-TestFileContains -Path (Join-Path $codexHome "config.toml") -Expected 'machine_setting = "preserve"'
+    Assert-TestFileContains -Path (Join-Path $codexHome "config.toml") -Expected 'MODEL = "machine-specific"'
+    Assert-TestFileContains -Path (Join-Path $codexHome "config.toml") -Expected '["features"]'
+    Assert-TestFileContains -Path (Join-Path $codexHome "config.toml") -Expected 'memories = true'
+    if ((Get-Content -Raw -LiteralPath (Join-Path $codexHome "config.toml")).Contains("[features]")) {
+        throw "config overlay duplicated a quoted table"
+    }
+    Assert-TestFileContains `
+        -Path (Join-Path $codexHome "config.toml") `
+        -Expected "machine_setting = `"$machineLabel`""
     Assert-TestFileContains -Path (Join-Path $codexHome "config.toml") -Expected 'trust_level = "trusted"'
     Assert-TestFileContains -Path (Join-Path $codexHome "auth.json") -Expected "leave unlisted state alone"
 
