@@ -4,6 +4,16 @@ Compass is the lean source of truth for portable Codex and Claude Code
 configuration. The current bundle contains reviewed Codex defaults and no
 active skills or agents.
 
+## Philosophy
+
+Compass defines durable outcomes and true boundaries. It leaves routine
+judgment, execution paths, tool use, and self-checking to current models.
+
+Add prompts, skills, agents, or configuration only for a demonstrated
+current-model gap. Re-evaluate them after material model changes, and remove
+scaffolding that duplicates or distorts native behavior. Use absolute rules
+only for true invariants.
+
 ## Boundaries
 
 - `codex/AGENTS.md` is the permanent global Codex instruction source. It may be
