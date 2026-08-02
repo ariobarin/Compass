@@ -32,5 +32,5 @@ Model-specific guidance:
 Durable engineering sources:
 
 - [Principles behind the Agile Manifesto](https://agilemanifesto.org/principles): simplicity as maximizing work not done.
-- [A Philosophy of Software Design](https://web.stanford.edu/~ouster/cgi-bin/book.php): decide what matters and reduce the complexity people must hold.
+- [A Philosophy of Software Design](https://web.stanford.edu/~ouster/cgi-bin/book.php): separate what is important from what is not and focus on what matters.
 - [Starbase tour and interview with Elon Musk](https://everydayastronaut.com/starbase-tour-and-interview-with-elon-musk/): question requirements and delete before simplifying or optimizing.
