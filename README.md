@@ -20,11 +20,11 @@ databases, browser state, generated plugins, and machine-only values stay local.
 - `claude.files`, `claude.skills`, and `claude.agents` install direct Claude
   definitions.
 
-`codex/AGENTS.md` remains as the permanent global instruction source, with no
-active instructions. `codex/config.toml` carries durable global defaults while
-machine paths, generated plugin state, project trust, and app-local settings
-stay in the live file. Skill and agent collections remain empty until a
-reviewed change adds a definition and its manifest entry.
+`codex/AGENTS.md` carries reviewed global user preferences. `codex/config.toml`
+carries durable global defaults while machine paths, generated plugin state,
+project trust, and app-local settings stay in the live file. Skill and agent
+collections remain empty until a reviewed change adds a definition and its
+manifest entry.
 
 ## Commands
 

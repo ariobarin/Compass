@@ -67,7 +67,6 @@ trust_level = "trusted"
         -AgentsHome $agentsHome `
         -ClaudeHome $claudeHome
 
-    Assert-TestFileContains -Path (Join-Path $codexHome "AGENTS.md") -Expected "Intentionally blank"
     Assert-TestFileContains -Path (Join-Path $codexHome "config.toml") -Expected 'model = "gpt-5.6-sol"'
     Assert-TestFileContains -Path (Join-Path $codexHome "config.toml") -Expected 'MODEL = "machine-specific"'
     Assert-TestFileContains -Path (Join-Path $codexHome "config.toml") -Expected '["features"]'
