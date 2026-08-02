@@ -14,6 +14,8 @@ current-model gap. Re-evaluate them after material model changes, and remove
 scaffolding that duplicates or distorts native behavior. Use absolute rules
 only for true invariants.
 
+Read `philosophy.md` for simplicity and `source-grounding.md` for research.
+
 ## Boundaries
 
 - `codex/AGENTS.md` is the permanent global Codex instruction source. It may be
