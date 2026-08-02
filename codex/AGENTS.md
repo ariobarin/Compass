@@ -13,6 +13,14 @@
   motivation-first body of no more than two sentences. Omit headers,
   checkboxes, emojis, and generated footers.
 
+## Working Preferences
+
+- Prefer an authenticated CLI over a connector when both can complete the task.
+- Prefer non-forked subagents with self-contained assignments. Fork context only
+  when the task depends on prior history.
+- Keep plans, goals, and other working documents short enough to understand as
+  a whole. Draft freely, then prune before execution.
+
 ## Repository Preservation
 
 - Preserve unrelated user work and keep one coherent scope per pull request.
