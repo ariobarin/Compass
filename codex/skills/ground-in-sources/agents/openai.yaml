@@ -1,4 +1,4 @@
 interface:
   display_name: "Ground in Sources"
-  short_description: "Extract current and durable source philosophies"
-  default_prompt: "Use $ground-in-sources to discover current official guidance and renowned original thinking, then extract and distill it into this artifact."
+  short_description: "Discover field-tested operating philosophies"
+  default_prompt: "Use $ground-in-sources to find and extract the strongest field-tested philosophy for this artifact."
