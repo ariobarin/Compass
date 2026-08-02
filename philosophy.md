@@ -7,9 +7,9 @@ the context needed to act. Let detail earn its place by helping the reader
 understand one of them.
 
 Plans and prompts should guide judgment, not enumerate every possible path.
-Develop them as scratchpads when useful. Before execution, prune repetition,
-speculation, obsolete choices, and detail that does not change a decision. The
-result should be small enough to understand as a whole.
+Develop them as scratchpads when useful. Before execution, prune them to the
+context needed to understand, decide, and act. The result should be small enough
+to understand as a whole.
 
 Apply the same order to code, tests, processes, and pull requests. Question the
 requirements. Delete unnecessary work before simplifying or optimizing what
