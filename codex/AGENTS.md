@@ -10,14 +10,8 @@
 - Use a lowercase commit subject of about eight words or fewer, with no
   trailing punctuation, body, or `Co-Authored-By` trailer.
 - Prefer a focused pull request with a descriptive, often verb-led title and a
-  motivation-first body of no more than two sentences. Omit conventional-commit
-  prefixes, headers, checkboxes, emojis, and generated footers.
-
-## Authority
-
-- Treat requests to plan, research, review, diagnose, or explain as
-  non-mutating unless the user also asks for changes.
-- Ask before irreversible actions or material scope expansion.
+  motivation-first body of no more than two sentences. Omit headers,
+  checkboxes, emojis, and generated footers.
 
 ## Repository Preservation
 
