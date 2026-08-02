@@ -18,8 +18,8 @@
 - Prefer an authenticated CLI over a connector when both can complete the task.
 - Prefer non-forked subagents with self-contained assignments. Fork context only
   when the task depends on prior history.
-- Keep plans, goals, and other working documents short enough to understand as
-  a whole. Draft freely, then prune before execution.
+- Keep plans, goals, and other working documents concise and complete enough to
+  understand as a whole. Draft freely, then prune before execution.
 
 ## Repository Preservation
 
