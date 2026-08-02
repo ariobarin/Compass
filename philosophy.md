@@ -18,3 +18,19 @@ remains. Keep the smallest coherent change that solves the real problem.
 Brevity is not the goal by itself. Preserve correctness, evidence, user intent,
 and true boundaries. Prune what does not help the reader understand, decide, or
 act.
+
+## Sources
+
+Revisit the model-specific sources after material model changes. The
+engineering sources are the durable layer.
+
+Model-specific guidance:
+
+- [OpenAI GPT-5.6 prompting guidance](https://developers.openai.com/api/docs/guides/prompt-guidance-gpt-5p6): outcome-first prompts, prompt pruning, and preservation of context and true constraints.
+- [Anthropic Claude Opus 5 prompting guidance](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5): written deliverable length, task scope, and removal of legacy verification scaffolding.
+
+Durable engineering sources:
+
+- [Principles behind the Agile Manifesto](https://agilemanifesto.org/principles): simplicity as maximizing work not done.
+- [A Philosophy of Software Design](https://web.stanford.edu/~ouster/cgi-bin/book.php): decide what matters and reduce the complexity people must hold.
+- [Starbase tour and interview with Elon Musk](https://everydayastronaut.com/starbase-tour-and-interview-with-elon-musk/): question requirements and delete before simplifying or optimizing.
