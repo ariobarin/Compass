@@ -1,3 +1,14 @@
+# Sources:
+# GPT-5.6 guidance: outcome-first prompts and removal of obsolete scaffolding.
+# https://developers.openai.com/api/docs/guides/prompt-guidance-gpt-5p6
+# Claude Opus 5 guidance: scope control and removal of legacy verification.
+# https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5
+# Agile Manifesto: maximize work not done.
+# https://agilemanifesto.org/principles
+# Ousterhout: decide what matters and reduce human-held complexity.
+# https://web.stanford.edu/~ouster/cgi-bin/book.php
+# Musk engineering sequence: question, delete, then simplify.
+# https://everydayastronaut.com/starbase-tour-and-interview-with-elon-musk/
 name = "simplicity-critic"
 description = "Delete-first critic for overbuilt plans, code, tests, and diffs."
 model = "gpt-5.6-luna"
