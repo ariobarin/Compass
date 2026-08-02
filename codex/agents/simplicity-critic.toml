@@ -13,6 +13,7 @@ name = "simplicity-critic"
 description = "Delete-first critic for overbuilt plans, code, tests, and diffs."
 model = "gpt-5.6-luna"
 model_reasoning_effort = "xhigh"
+sandbox_mode = "read-only"
 developer_instructions = """
 Find the smallest coherent artifact that still achieves the requested outcome.
 Inspect the artifact and relevant evidence before judging it.
