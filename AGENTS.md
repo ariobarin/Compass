@@ -1,8 +1,8 @@
 # Repository Guidance
 
 Compass is the lean source of truth for portable Codex and Claude Code
-configuration. The current bundle contains reviewed Codex defaults and no
-active skills or agents.
+configuration. The bundle contains reviewed Codex defaults and only explicitly
+selected skills or agents.
 
 ## Philosophy
 

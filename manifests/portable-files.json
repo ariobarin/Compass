@@ -4,7 +4,9 @@
     "files": [
       "AGENTS.md"
     ],
-    "agents": []
+    "agents": [
+      "simplicity-critic"
+    ]
   },
   "agents": {
     "skills": []
