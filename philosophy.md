@@ -19,6 +19,18 @@ Brevity is not the goal by itself. Preserve correctness, evidence, user intent,
 and true boundaries. Prune what does not help the reader understand, decide, or
 act.
 
+## Signal
+
+Words steer models. More words do not mean more control.
+
+Give every paragraph one job. Make every sentence change behavior. Make every
+word sharpen it. Delete hedges, ceremony, repetition, and advice the model
+already knows.
+
+Use a few decisive principles that transfer judgment. Do not enumerate behavior
+the model can infer. Pruning is not compression. Preserve meaning, force, and
+taste. The result must be small enough to grok and strong enough to steer.
+
 ## Sources
 
 Revisit the model-specific sources after material model changes. The
@@ -34,3 +46,4 @@ Durable engineering sources:
 - [Principles behind the Agile Manifesto](https://agilemanifesto.org/principles): simplicity as maximizing work not done.
 - [A Philosophy of Software Design](https://web.stanford.edu/~ouster/cgi-bin/book.php): separate what is important from what is not and focus on what matters.
 - [Starbase tour and interview with Elon Musk](https://everydayastronaut.com/starbase-tour-and-interview-with-elon-musk/): question requirements and delete before simplifying or optimizing.
+- [The Elements of Style](https://www.gutenberg.org/ebooks/37134): omit needless words and make every remaining word tell.
