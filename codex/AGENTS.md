@@ -4,8 +4,6 @@
 
 - Do not use em dashes or en dashes. Use other punctuation or separate
   sentences.
-- Make every instruction earn its place. Use decisive words that change
-  behavior. Delete noise.
 
 ## Git And Pull Requests
 
