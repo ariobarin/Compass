@@ -24,8 +24,7 @@ act.
 Words steer models. More words alone do not mean more control.
 
 Give every paragraph one job. Make every sentence change behavior. Make every
-word sharpen it. Delete empty hedges, ceremony, repetition, and advice the model
-already knows.
+word sharpen it. Delete empty hedges, ceremony, and repetition.
 
 Use a few decisive principles that transfer judgment. Do not enumerate routine
 behavior the model can reliably infer. Keep true boundaries explicit. Pruning
