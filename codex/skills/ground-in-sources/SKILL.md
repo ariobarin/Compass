@@ -11,15 +11,17 @@ Users discover reality. Vendors describe intent. Start with the users.
 
 - Name the failure, taste, or decision. Find people who have lived it.
 - Search user reports, issue trackers, Reddit, X, practitioner blogs, talks,
-  interviews, and books. Use official sources to establish contracts and
-  claims, never as a shortcut for behavior.
-- Follow the trail until it reaches work: prompts, artifacts, traces, failures,
-  measurements, corrections, and criticism.
+  interviews, and books. Official sources define contracts and vendor claims.
+  Corroborated field evidence outranks official posting for behavior and failure
+  modes.
+- Follow the trail until it reaches work: exact inputs, outputs, artifacts,
+  traces, failures, costs, measurements, corrections, and criticism.
 - Bind changing claims to exact versions and dates.
 
 ## Judge
 
-- Receipts outrank reputation. Repeated independent experience outranks polish.
+- Firsthand receipts outrank reputation. Repeated independent experience
+  outranks polish.
 - Read replies. Corroborate anecdotes. Use conflict to expose boundaries.
 - Discard recycled launch copy, generic advice, unsupported certainty, and prose
   that could fit any model.
@@ -31,4 +33,4 @@ Users discover reality. Vendors describe intent. Start with the users.
 - Distill without weakening. Every line must change a decision. Every word must
   earn its place.
 - Cite the contribution. Mark guidance that expires with a model or date.
-- Stop when the research changes the artifact.
+- Stop when corroborated evidence has clear boundaries and changes the artifact.
