@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Quiet Interfaces"
+  short_description: "Build calm, coherent, trustworthy product UI"
+  default_prompt: "Use $design-quiet-interfaces to design this product around stable geometry, semantic restraint, truthful feedback, and behavior-level validation."
