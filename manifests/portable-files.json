@@ -9,7 +9,9 @@
     ]
   },
   "agents": {
-    "skills": []
+    "skills": [
+      "ground-in-sources"
+    ]
   },
   "claude": {
     "files": [],

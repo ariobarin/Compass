@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ground in Sources"
+  short_description: "Extract hard-won field doctrine"
+  default_prompt: "Use $ground-in-sources to hunt field evidence and extract the doctrine it earned."
