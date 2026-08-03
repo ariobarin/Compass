@@ -8,14 +8,14 @@ outrank the people who bear the product's failures, costs, and constraints.
 
 Field knowledge forms in public. On July 9, 2026, Simon Willison published
 [a same-day GPT-5.6 field report](https://simonwillison.net/2026/Jul/9/gpt-5-6/).
-Users reported
-[overcomplication](https://www.reddit.com/r/codex/comments/1utlu6p/is_it_just_me_or_does_56_overcomplicate_tasks/)
-on July 11 and
+A Reddit discussion collected anecdotal
+[overcomplication reports](https://www.reddit.com/r/codex/comments/1utlu6p/is_it_just_me_or_does_56_overcomplicate_tasks/)
+on July 11. One user reported
 [changed skill triggering](https://www.reddit.com/r/codex/comments/1uw2i2l/practical_tips_after_using_gpt56_for_a_day/)
 on July 14. On July 24, a user published a distinct
 [instrumented batching investigation](https://github.com/openai/codex/issues/35050).
-Different problems reveal one pattern: users find operating truth in public,
-fast.
+These sources carry different weight. Together they show where field knowledge
+begins: in public, fast.
 
 Research is a hunt for signal. Establish the official record. Then start where
 consequences happen: issue trackers, Reddit, X, practitioner blogs, talks,
@@ -34,7 +34,7 @@ Record the date or model when it can expire.
 ## Sources
 
 - [July 9, 2026, GPT-5.6](https://simonwillison.net/2026/Jul/9/gpt-5-6/): separates vendor claims from firsthand observations, costs, comparisons, and artifacts.
-- [July 14, 2026, GPT-5.6](https://www.reddit.com/r/codex/comments/1uw2i2l/practical_tips_after_using_gpt56_for_a_day/): user evidence of changed effort and skill triggering.
+- [July 14, 2026, GPT-5.6 in Codex](https://www.reddit.com/r/codex/comments/1uw2i2l/practical_tips_after_using_gpt56_for_a_day/): one user's uncorroborated report of changed effort and skill triggering; environment unspecified.
 - [July 24, 2026, GPT-5.6 on Codex app 26.721.30844](https://github.com/openai/codex/issues/35050): traces, repeated trials, measured usage, and stated limits.
 - [July 9, 2026, GPT-5.6 launch](https://openai.com/index/gpt-5-6/): the vendor record of release facts and capability claims.
 - [Accessed August 3, 2026, Claude Fable 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5): current model-specific prompting doctrine.
