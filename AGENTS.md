@@ -9,6 +9,9 @@ selected skills or agents.
 Compass defines durable outcomes and true boundaries. It leaves routine
 judgment, execution paths, tool use, and self-checking to current models.
 
+Every Compass instruction must earn its place. Use decisive words that change
+behavior. Delete noise.
+
 Add prompts, skills, agents, or configuration only for a demonstrated
 current-model gap. Re-evaluate them after material model changes, and remove
 scaffolding that duplicates or distorts native behavior. Use absolute rules
