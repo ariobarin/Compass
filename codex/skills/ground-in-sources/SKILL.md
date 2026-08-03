@@ -1,41 +1,34 @@
 ---
 name: ground-in-sources
-description: Discover and extract field-tested philosophies before writing prompts, skills, agents, plans, policies, or technical direction. Use when an artifact should inherit the strongest thinking of experienced users, practitioners, or authors instead of inventing its own doctrine.
+description: Extract hard-won doctrine from people who use, test, and suffer the thing. Use before writing durable prompts, skills, agents, plans, policies, or technical direction that should inherit field experience instead of vendor-filtered or invented guidance.
 ---
 
 # Ground In Sources
 
-Do not invent a doctrine before looking for people who earned one.
+Users discover reality. Vendors describe intent. Start with the users.
 
 ## Hunt
 
-- Translate the user's taste, problem, or failure pattern into concepts worth
-  searching. Look for people who have named, solved, or repeatedly encountered
-  it.
-- Search release threads, issue trackers, Reddit, X, practitioner blogs, talks,
-  interviews, and books. For changing technology, bind every claim to its date
-  and exact version.
-- Follow promising names, phrases, citations, replies, and linked artifacts.
-  Read far enough to find the work behind the claim and the strongest opposing
-  account.
-- Use official sources for contracts, supported features, and provenance. Do
-  not rank them above field evidence for behavior, failure modes, or workflow.
+- Name the failure, taste, or decision. Find people who have lived it.
+- Search user reports, issue trackers, Reddit, X, practitioner blogs, talks,
+  interviews, and books. Use official sources to establish contracts and
+  claims, never as a shortcut for behavior.
+- Follow the trail until it reaches work: prompts, artifacts, traces, failures,
+  measurements, corrections, and criticism.
+- Bind changing claims to exact versions and dates.
 
 ## Judge
 
-- Prefer firsthand work with exact inputs, artifacts, failures, costs,
-  measurements, corrections, and reproducible detail. Treat reputation,
-  popularity, and source type as leads, not proof.
-- Downrank recycled launch copy, generic advice, unsupported certainty, and
-  writing that could describe any product or model.
-- Read comments and criticism as part of the source. Corroborate anecdotes and
-  use disagreement to discover where a principle stops working.
+- Receipts outrank reputation. Repeated independent experience outranks polish.
+- Read replies. Corroborate anecdotes. Use conflict to expose boundaries.
+- Discard recycled launch copy, generic advice, unsupported certainty, and prose
+  that could fit any model.
 
 ## Extract
 
-- Extract the wording, sequence, distinction, or decision rule that changes the
-  artifact. Separate what is demonstrated, reported, and inferred.
-- Distill the idea without draining its judgment. Cite the contribution beside
-  the philosophy and record the date or model when it can expire.
-- Stop when the sources have changed the artifact's decisions, not when a source
-  quota has been filled.
+- Separate observed, reported, and inferred.
+- Take the principle, sequence, distinction, or words that earned their force.
+- Distill without weakening. Every line must change a decision. Every word must
+  earn its place.
+- Cite the contribution. Mark guidance that expires with a model or date.
+- Stop when the research changes the artifact.

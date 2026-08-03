@@ -1,4 +1,4 @@
 interface:
   display_name: "Ground in Sources"
-  short_description: "Discover field-tested operating philosophies"
-  default_prompt: "Use $ground-in-sources to find and extract the strongest field-tested philosophy for this artifact."
+  short_description: "Extract hard-won field doctrine"
+  default_prompt: "Use $ground-in-sources to hunt field evidence and extract the doctrine it earned."
