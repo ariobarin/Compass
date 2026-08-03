@@ -14,6 +14,10 @@ current-model gap. Re-evaluate them after material model changes, and remove
 scaffolding that duplicates or distorts native behavior. Use absolute rules
 only for true invariants.
 
+Compass research starts with the official record. For product behavior,
+corroborated field reports from matching versions and environments outrank
+official posting. Official sources retain authority over contracts and policy.
+
 Read `philosophy.md` for simplicity and `source-grounding.md` for research.
 
 ## Boundaries

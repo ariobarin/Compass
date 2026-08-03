@@ -20,9 +20,6 @@
   when the task depends on prior history.
 - Keep plans, goals, and other working documents concise and complete enough to
   understand as a whole. Draft freely, then prune before execution.
-- Research deeply when source quality matters. For product behavior, trust
-  corroborated field reports from matching versions and environments over
-  official posting. Use official sources for contracts and policy.
 
 ## Repository Preservation
 
