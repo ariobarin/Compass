@@ -20,8 +20,8 @@
   when the task depends on prior history.
 - Keep plans, goals, and other working documents concise and complete enough to
   understand as a whole. Draft freely, then prune before execution.
-- When source quality matters, research deeply. Prefer firsthand field evidence
-  and demonstrated practitioner judgment over official status alone.
+- Trust lived experience over official posting for behavior. Research deeply
+  enough to find receipts.
 
 ## Repository Preservation
 
