@@ -21,15 +21,15 @@ act.
 
 ## Signal
 
-Words steer models. More words do not mean more control.
+Words steer models. More words alone do not mean more control.
 
 Give every paragraph one job. Make every sentence change behavior. Make every
-word sharpen it. Delete hedges, ceremony, repetition, and advice the model
+word sharpen it. Delete empty hedges, ceremony, repetition, and advice the model
 already knows.
 
-Use a few decisive principles that transfer judgment. Do not enumerate behavior
-the model can infer. Pruning is not compression. Preserve meaning, force, and
-taste. The result must be small enough to grok and strong enough to steer.
+Use a few decisive principles that transfer judgment. Do not enumerate routine
+behavior the model can reliably infer. Keep true boundaries explicit. Pruning
+is not compression. Preserve meaning, force, and taste.
 
 ## Sources
 
