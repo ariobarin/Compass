@@ -10,8 +10,9 @@ small Python commands for model selection data. Data readiness is internal to
 each command: cached data is used immediately, missing data is created
 automatically, and stale or undated data stops recommendations until refreshed.
 
-Run commands from this skill directory with `python`, or call scripts by path
-with `${CLAUDE_SKILL_DIR}` in Claude Code.
+Use Python 3.10 or newer. On Windows, run `py -3`; on Unix, run `python3`.
+Every `python` command or hint below means that working launcher. Call scripts
+by path with `${CLAUDE_SKILL_DIR}` in Claude Code.
 
 ## Capabilities
 
