@@ -10,7 +10,8 @@
   },
   "agents": {
     "skills": [
-      "ground-in-sources"
+      "ground-in-sources",
+      "which-llm"
     ]
   },
   "claude": {
