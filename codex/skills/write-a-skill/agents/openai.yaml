@@ -1,0 +1,4 @@
+interface:
+  display_name: "Write A Skill"
+  short_description: "Design concise, high-signal agent skills"
+  default_prompt: "Use $write-a-skill to turn this capability into a concise, grounded skill that composes with Compass."

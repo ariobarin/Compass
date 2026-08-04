@@ -10,7 +10,9 @@
   },
   "agents": {
     "skills": [
-      "ground-in-sources"
+      "compass",
+      "ground-in-sources",
+      "write-a-skill"
     ]
   },
   "claude": {
