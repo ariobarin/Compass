@@ -1,0 +1,4 @@
+interface:
+  display_name: "Micro Experiment"
+  short_description: "Test uncertain ideas with disposable code"
+  default_prompt: "Use $micro-experiment to test this idea outside production before deciding how to integrate it."
