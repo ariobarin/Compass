@@ -33,6 +33,11 @@ completely.
   worked example would clarify the reasoning, when deriving another skill or
   design system from this one, or when preserving the evidence behind these
   principles matters.
+- Read
+  [references/frontend-design-taste.md](references/frontend-design-taste.md)
+  when designing or redesigning a landing page, portfolio, marketing site, or
+  editorial page, or when the earlier Compass frontend taste guidance should
+  remain available in full.
 
 ## Begin With The Product Sentence
 
