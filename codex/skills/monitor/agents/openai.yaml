@@ -1,0 +1,4 @@
+interface:
+  display_name: "Monitor"
+  short_description: "Supervise long-running work without churn"
+  default_prompt: "Use $monitor to supervise this long-running task, recover failures, and stop on explicit terminal evidence."
