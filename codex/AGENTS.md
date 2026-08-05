@@ -20,6 +20,9 @@
   when the task depends on prior history.
 - Keep plans, goals, and other working documents concise and complete enough to
   understand as a whole. Draft freely, then prune before execution.
+- Every line becomes maintenance. Delete, consolidate, or reuse before adding.
+  Code, tests, and documents must earn their place by delivering the requested
+  outcome or protecting a real risk.
 
 ## Repository Preservation
 
