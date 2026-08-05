@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test for Risk"
+  short_description: "Choose evidence proportional to real risk"
+  default_prompt: "Use $test-for-risk to choose the smallest durable proof this change actually needs."
