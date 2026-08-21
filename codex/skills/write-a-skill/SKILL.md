@@ -10,11 +10,15 @@ container for everything known about the task.
 
 ## Grok
 
-- Name the capability, the recurring failure, and the decision the skill must
-  change. A useful one-off does not automatically deserve a skill.
+- Name the capability, the recurring current-model failure, and the exact
+  decision the skill must change. Reproduce that default failure on realistic
+  work before drafting. If there is no demonstrated gap, do not create a skill.
 - Read neighboring Compass skills. Preserve their ownership boundaries.
 - Use `$ground-in-sources` to inherit hard-won doctrine before writing durable
   guidance.
+- When adapting a proven external skill, start from the actual upstream
+  artifact. Preserve working language until evidence earns a change. Never
+  rewrite merely to make the result original or Compass-shaped.
 
 ## Write
 
@@ -26,8 +30,14 @@ container for everything known about the task.
 - Write the philosophy, not the domain checklist. The model already knows the
   routine cases. Keep only surprising distinctions, hard-won failure modes, and
   decision rules it is likely to miss.
+- Run the no-op test sentence by sentence: would the current model behave
+  differently without this line? If not, delete it. Prefer a strong existing
+  concept that recruits the right judgment over a paragraph of weak reminders.
 - Delete inventories of steps, surfaces, outputs, and concerns. Keep an item
   only when omitting it caused a real behavioral failure.
+- When a phase is vulnerable to premature completion, give it an observable
+  completion criterion. Do not let later steps pull the agent past an unproven
+  result.
 - Do not transplant research into `SKILL.md`. Extract only what changes a
   decision. Put provenance in `references/sources.md` and keep it out of normal
   execution. Leave target-specific facts to source grounding at use time.
@@ -38,12 +48,18 @@ container for everything known about the task.
 
 ## Prove And Prune
 
-Challenge the core on realistic work. Observe what the agent selects, decides,
-and produces. When a failure exposes missing judgment, add the smallest causal
-instruction and run it again. Never expand against an imagined failure.
+Challenge the core on blind, realistic work. Run an organic prompt against the
+current model without the candidate first, then against the candidate under the
+same conditions. Do not tell the candidate what behavior is being measured.
+Judge what it actually decides and produces, not what it claims to have applied.
 
-Fix the causal language, then delete every line that merely makes the skill more
-complete. Run the structural validator and the repository's current checks.
+Test the description as prompt code too. Matching tasks must trigger the skill;
+nearby tasks that do not need the correction must stay out.
+
+Change one causal thing at a time. When a real failure exposes missing judgment,
+add the smallest instruction that blocks it and run again. When a line does not
+move behavior, delete it. Fix causal language before adding coverage. Run the
+structural validator and the repository's current checks.
 
 Source provenance lives in [references/sources.md](references/sources.md). Do not
 load it during normal skill authoring.

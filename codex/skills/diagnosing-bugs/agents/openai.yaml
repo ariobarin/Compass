@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diagnosing Bugs"
+  short_description: "Reproduce before theorizing"
+  default_prompt: "Use $diagnosing-bugs to build a tight repro, find the cause, and prove the fix against the original symptom."
