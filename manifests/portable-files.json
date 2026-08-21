@@ -11,10 +11,12 @@
   "agents": {
     "skills": [
       "compass",
+      "diagnosing-bugs",
       "ground-in-sources",
       "micro-experiment",
       "monitor",
       "test-for-risk",
+      "unslop",
       "write-a-skill"
     ]
   },
