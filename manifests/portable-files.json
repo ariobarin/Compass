@@ -5,6 +5,7 @@
       "AGENTS.md"
     ],
     "agents": [
+      "comment-sicko",
       "simplicity-critic"
     ]
   },
@@ -15,6 +16,7 @@
       "ground-in-sources",
       "micro-experiment",
       "monitor",
+      "no-comments",
       "test-for-risk",
       "unslop",
       "write-a-skill"
