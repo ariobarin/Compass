@@ -11,6 +11,7 @@
   },
   "agents": {
     "skills": [
+      "blast-radius",
       "compass",
       "diagnosing-bugs",
       "ground-in-sources",
