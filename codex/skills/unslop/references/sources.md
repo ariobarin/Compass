@@ -8,11 +8,12 @@ Compass originally adapted Lauren Tan's `unslop` skill in pstack:
 - Repository license: MIT
 - Upstream copyright: Copyright (c) 2026 Lauren Tan
 
-The September 5, 2026 revision removes the general writing checklist and its
-instruction to add personality. The user clarified that preserving their
-cadence and uncertainty applies to their website and other public-facing
-writing, not code work. This skill now covers editing an author's account for
-publication; it does not supply general coding or communication instructions.
+The September 5, 2026 revision consolidates the upstream pattern catalog while
+removing the instruction to add personality and blanket rules about formatting
+or vocabulary. Patterns remain useful editorial clues: lists, contrasts, and
+technical terms can be appropriate. Unslop applies to prose with recognizable
+AI-writing problems, including technical explanations and PR text. The user's
+detailed source-voice preferences belong to their website's editorial guidance.
 
 Sources read September 5, 2026:
 
@@ -20,7 +21,11 @@ Sources read September 5, 2026:
 - [Fable 5 prompting guidance](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5#recommended-scaffolding-changes): older, prescriptive skills can reduce quality; compare against defaults.
 - [Fable 5.1 prompting guidance](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-1#formatting-in-chat): older anti-formatting instructions can now suppress useful structure.
 - [Matt Pocock's authoring guidance](https://github.com/mattpocock/skills/blob/3cca18b368ae95cdbdebbff572ccafa662551015/skills/productivity/writing-for-agents/SKILL.md): delete instructions that do not change behavior relative to the current model. This is practitioner guidance, not a GPT-6 comparison.
-- [Oral History Association best practices](https://oralhistory.org/best-practices/): preserve a narrator's perspective and meaning. Its interview and approval procedures are outside this skill's scope.
+
+These sources support revisiting instructions and retaining useful distinctions.
+They do not establish that every older rule is redundant or that this particular
+catalog improves every draft. The accompanying comparisons are limited editing
+checks, not a general quality benchmark.
 
 ## Upstream license
 
