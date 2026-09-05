@@ -2,8 +2,15 @@
 
 ## Writing
 
-- Do not use em dashes or en dashes. Use other punctuation or separate
-  sentences.
+Use plain language and develop connected ideas as prose. Lists help when the
+reader needs to scan or compare separate items. Let the material decide the
+shape instead of giving every answer the same structure.
+
+An instruction is also an example. Write agent-facing guidance in the language
+and style you want the agent to use, and explain enough of the reason for it
+that the agent can judge a different case.
+
+Do not use em dashes or en dashes. Use other punctuation or separate sentences.
 
 ## Git And Pull Requests
 
