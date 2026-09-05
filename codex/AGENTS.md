@@ -2,13 +2,8 @@
 
 ## Writing
 
-Use plain language. Choose a structure that helps the reader follow the thought.
-
-An instruction is also an example. Write agent-facing guidance in the style you
-want the agent to use. Explain why the instruction matters so the agent can
-apply it in new situations.
-
-Do not use em dashes or en dashes. Use other punctuation or separate sentences.
+- Do not use em dashes or en dashes. Use other punctuation or separate
+  sentences.
 
 ## Git And Pull Requests
 
