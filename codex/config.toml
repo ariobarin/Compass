@@ -9,6 +9,7 @@ approval_policy = "never"
 
 [agents]
 max_depth = 2
+max_concurrent_threads_per_session = 16
 
 [windows]
 sandbox = "elevated"
