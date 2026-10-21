@@ -55,3 +55,19 @@ Run the portable test suite:
 Install backs up a selected target before replacing it. It does not remove or
 inspect unlisted runtime state. Git contains the configuration history, so
 Compass carries no retirement or backwards compatibility database.
+
+## Plugin
+
+The skills also install as one plugin in Claude Code and Codex from this
+repository's `.claude-plugin/marketplace.json`:
+
+```sh
+claude plugin install compass --marketplace ariobarin/compass
+codex plugin marketplace add ariobarin/compass && codex plugin add compass@compass
+```
+
+The plugin carries no version, so Claude Code tracks the installed commit.
+Turn on auto-update for the `compass` marketplace in `/plugin` to follow
+`main`. Plugin skills are namespaced, such as `/compass:grilling`. Use either
+the plugin or `install.ps1` for an agent, since both together list every skill
+twice.

@@ -1,0 +1,11 @@
+{
+  "name": "compass",
+  "description": "Ario's agent skills for decisions, experiments, debugging, proof, and handoffs.",
+  "author": {
+    "name": "Ario Barin Ostovary",
+    "url": "https://github.com/ariobarin"
+  },
+  "repository": "https://github.com/ariobarin/compass",
+  "license": "MIT",
+  "skills": ["./codex/skills/"]
+}

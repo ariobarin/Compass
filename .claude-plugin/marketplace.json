@@ -1,0 +1,13 @@
+{
+  "name": "compass",
+  "owner": {
+    "name": "ariobarin"
+  },
+  "plugins": [
+    {
+      "name": "compass",
+      "source": "./",
+      "description": "Ario's agent skills for decisions, experiments, debugging, proof, and handoffs."
+    }
+  ]
+}
