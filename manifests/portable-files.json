@@ -14,7 +14,6 @@
       "blast-radius",
       "compass",
       "diagnosing-bugs",
-      "design-prototype",
       "grilling",
       "ground-in-sources",
       "handoff",
@@ -22,13 +21,14 @@
       "monitor",
       "no-comments",
       "test-for-risk",
-      "to-tickets",
       "unslop",
       "write-a-skill"
     ]
   },
   "claude": {
-    "files": [],
+    "files": [
+      "CLAUDE.md"
+    ],
     "skills": [],
     "agents": []
   }
